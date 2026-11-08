@@ -4281,7 +4281,7 @@ func _build_forest_detail_pass() -> void:
 		log_col.append(Color(0.19, 0.14, 0.10))
 	_far_multimesh(_sphere_mesh(), shrub_xf, shrub_col)
 	_far_multimesh(_sphere_mesh(), rock_xf, rock_col)
-	_far_multimesh(_cylinder_mesh(), log_xf, log_col)
+	_far_multimesh(_environment_log_mesh(), log_xf, log_col)
 
 	# Snow banks and drainage shoulders beside the approach road.
 	for side in [-1.0, 1.0]:
@@ -4375,3 +4375,12 @@ func _build_ambient_audio() -> void:
 	add_child(ambience)
 	ambience.play()
 
+
+
+func _environment_log_mesh() -> CylinderMesh:
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = 0.22
+	mesh.bottom_radius = 0.22
+	mesh.height = 1.0
+	mesh.radial_segments = 7
+	return mesh
