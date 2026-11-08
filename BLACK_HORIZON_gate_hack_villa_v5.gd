@@ -20,7 +20,7 @@ const FOREST_LAPTOP_POS := Vector3(9.0, 0.1, -66.0)
 const FOREST_EXTRACT_POS := Vector3(0.0, 0.0, -112.0)
 const FOREST_START := Vector3(0.0, 0.0, 92.0)
 const FOREST_CHECKPOINT_AREA := Vector3(0.0, 0.0, 82.0)
-const FOREST_CHECKPOINT_RESPAWN := Vector3(0.0, 0.0, 86.0)
+const FOREST_CHECKPOINT_RESPAWN: Vector3 = Vector3(0.0, 0.0, 86.0)
 const EXTRACT_POS := Vector3(0, 0, -44)
 
 const PHASE_BRIEF := 0
@@ -4466,7 +4466,7 @@ func _build_ambient_audio() -> void:
 		var sample := filtered * gust * 0.20
 		sample += sin(TAU * 54.0 * t) * 0.025
 		for bird_start in [1.25, 3.8, 6.15]:
-			var bt := t - bird_start
+			var bt: float = t - float(bird_start)
 			if bt >= 0.0 and bt < 0.42:
 				var sweep := 1850.0 + 700.0 * sin(PI * bt / 0.42)
 				sample += sin(TAU * sweep * bt) * sin(PI * bt / 0.42) * 0.035
