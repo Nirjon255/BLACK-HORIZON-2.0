@@ -3688,7 +3688,7 @@ func _far_multimesh(mesh: Mesh, xforms: Array, colors: Array) -> void:
 # the ground-floor ceiling slab.
 
 # Set to true to spawn the guards and sentries again (both missions).
-const ENEMIES_ENABLED := false
+const ENEMIES_ENABLED := true
 
 const VILLA_H1 := 3.3      # ground-floor wall height
 const VILLA_FLOOR2 := 3.6  # ground-floor ceiling top, which is the first-floor level
