@@ -365,15 +365,15 @@ func _bind_mouse(action: String, button: MouseButton) -> void:
 func _build_environment() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.48, 0.55, 0.62)
+	env.background_color = Color(0.42, 0.49, 0.56)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.48, 0.54, 0.60)
-	env.ambient_light_energy = 0.82
+	env.ambient_light_color = Color(0.43, 0.49, 0.54)
+	env.ambient_light_energy = 0.78
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.tonemap_exposure = 1.05
+	env.tonemap_exposure = 1.0
 	env.adjustment_enabled = true
-	env.adjustment_contrast = 1.08
-	env.adjustment_saturation = 0.92
+	env.adjustment_contrast = 1.10
+	env.adjustment_saturation = 0.88
 	env.fog_enabled = true
 	env.fog_light_color = Color(0.66, 0.72, 0.78)
 	env.fog_density = 0.006
@@ -2734,6 +2734,10 @@ func _on_gate_locker_exited(body: Node3D) -> void:
 
 
 func _tree_blocked(x: float, z: float, keep: Array) -> bool:
+	# Hard exclusion around the full villa estate, including walls, forecourt and garden.
+	# This check is applied before any tree, bush or trunk is created.
+	if absf(x) <= 24.0 and z >= -81.0 and z <= -43.0:
+		return true  # villa estate: keep completely clear
 	if x > -44.0 and x < 44.0 and z > -86.0 and z < -4.0:
 		return true  # compound
 	if absf(x) < 8.0 and z > -6.0:
@@ -3688,7 +3692,8 @@ func _far_multimesh(mesh: Mesh, xforms: Array, colors: Array) -> void:
 # the ground-floor ceiling slab.
 
 # Set to true to spawn the guards and sentries again (both missions).
-const ENEMIES_ENABLED := true
+# Environment review build: keep all enemy actors disabled until the user approves them.
+const ENEMIES_ENABLED := false
 
 const VILLA_H1 := 3.3      # ground-floor wall height
 const VILLA_FLOOR2 := 3.6  # ground-floor ceiling top, which is the first-floor level
@@ -4456,8 +4461,8 @@ func _build_forest_detail_pass() -> void:
 
 
 func _inside_villa_perimeter(x: float, z: float) -> bool:
-	# Full walled estate footprint: never place procedural trees, shrubs or rocks here.
-	return absf(x) <= 22.0 and z >= -78.0 and z <= -46.0
+	# Expanded safety margin around the villa: no procedural stones, shrubs, logs or trees.
+	return absf(x) <= 24.0 and z >= -81.0 and z <= -43.0
 
 
 func _build_compound_architecture_pass() -> void:
@@ -4502,8 +4507,8 @@ func _build_mountain_detail_pass() -> void:
 
 func _build_ambient_audio() -> void:
 	# Procedural low-level wind and distant forest calls; no external audio files required.
-	var rate := 22050
-	var seconds := 8.0
+	var rate := 32000
+	var seconds := 10.0
 	var count := int(rate * seconds)
 	var data := PackedByteArray()
 	data.resize(count * 2)
@@ -4513,8 +4518,11 @@ func _build_ambient_audio() -> void:
 		var raw := randf() * 2.0 - 1.0
 		filtered += (raw - filtered) * 0.018
 		var gust := 0.65 + 0.22 * sin(TAU * 0.11 * t) + 0.10 * sin(TAU * 0.27 * t)
-		var sample := filtered * gust * 0.20
-		sample += sin(TAU * 54.0 * t) * 0.025
+		var sample := filtered * gust * 0.18
+		# Layered low wind rumble and soft high-frequency air movement.
+		sample += sin(TAU * 48.0 * t) * 0.022
+		sample += sin(TAU * 92.0 * t + sin(TAU * 0.17 * t)) * 0.009
+		sample += sin(TAU * 310.0 * t) * filtered * 0.018
 		for bird_start in [1.25, 3.8, 6.15]:
 			var bt: float = t - float(bird_start)
 			if bt >= 0.0 and bt < 0.42:
