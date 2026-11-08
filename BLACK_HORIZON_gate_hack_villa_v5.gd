@@ -3548,13 +3548,13 @@ const VILLA_ROOF := 7.2    # first-floor roof top
 
 
 func _build_villa() -> void:
-	var stone := Color(0.52, 0.48, 0.42)
-	var plaster := Color(0.8, 0.76, 0.68)
-	var inner := Color(0.84, 0.82, 0.77)
-	var trim := Color(0.66, 0.63, 0.57)
-	var floor_col := Color(0.62, 0.58, 0.52)
-	var wood := Color(0.36, 0.25, 0.15)
-	var iron := Color(0.2, 0.21, 0.22)
+	var stone := Color(0.20, 0.22, 0.23)
+	var plaster := Color(0.34, 0.36, 0.37)
+	var inner := Color(0.56, 0.55, 0.50)
+	var trim := Color(0.10, 0.12, 0.13)
+	var floor_col := Color(0.25, 0.27, 0.26)
+	var wood := Color(0.16, 0.12, 0.09)
+	var iron := Color(0.07, 0.09, 0.10)
 	_villa_garden()
 	_villa_ground_floor(stone, inner, trim, floor_col)
 	_villa_first_floor(plaster, inner, trim)
@@ -3566,30 +3566,26 @@ func _build_villa() -> void:
 
 # Walled garden (same wall line as before), gate, drive, lap pool and cypress trees.
 func _villa_garden() -> void:
-	var wall := Color(0.8, 0.77, 0.7)
-	var wood := Color(0.36, 0.27, 0.16)
+	var wall := Color(0.16, 0.18, 0.19)
+	var steel := Color(0.08, 0.10, 0.11)
 	_solid(Vector3(-12.25, 1.1, -48.0), Vector3(15.5, 2.2, 0.4), wall)
 	_solid(Vector3(12.25, 1.1, -48.0), Vector3(15.5, 2.2, 0.4), wall)
 	_solid(Vector3(-5.1, 1.8, -48.0), Vector3(1.2, 3.6, 1.2), wall)
 	_solid(Vector3(5.1, 1.8, -48.0), Vector3(1.2, 3.6, 1.2), wall)
-	_vis(Vector3(0.0, 3.5, -48.0), Vector3(10.2, 0.5, 1.2), wood)
+	_vis(Vector3(0.0, 3.5, -48.0), Vector3(10.2, 0.5, 1.2), steel)
 	_solid(Vector3(-20.0, 1.1, -62.0), Vector3(0.4, 2.2, 28.0), wall)
 	_solid(Vector3(20.0, 1.1, -62.0), Vector3(0.4, 2.2, 28.0), wall)
 	_solid(Vector3(0.0, 1.1, -76.0), Vector3(40.0, 2.2, 0.4), wall)
-	# Lawn and gravel drive from the gate to the porch.
-	_vis(Vector3(0.0, 0.02, -62.0), Vector3(39.0, 0.04, 27.0), Color(0.2, 0.3, 0.14))
-	_vis(Vector3(0.0, 0.045, -51.5), Vector3(7.0, 0.02, 7.0), Color(0.45, 0.42, 0.36))
-	# Lap pool along the rear garden: solid coping, water about 0.6 m deep.
-	var coping := Color(0.78, 0.76, 0.7)
-	_solid(Vector3(0.0, 0.35, -75.3), Vector3(23.6, 0.7, 0.6), coping)
-	_solid(Vector3(0.0, 0.35, -72.7), Vector3(23.6, 0.7, 0.6), coping)
-	_solid(Vector3(-11.3, 0.35, -74.0), Vector3(0.6, 0.7, 2.0), coping)
-	_solid(Vector3(11.3, 0.35, -74.0), Vector3(0.6, 0.7, 2.0), coping)
-	_vis(Vector3(0.0, 0.55, -74.0), Vector3(22.0, 0.04, 2.0), Color(0.16, 0.42, 0.52))
-	# Cypress trees: visual only, placed clear of the guard routes.
-	for p in [Vector3(-18.8, 0.0, -50.8), Vector3(18.8, 0.0, -50.8), Vector3(-18.8, 0.0, -74.5), Vector3(18.8, 0.0, -74.5)]:
-		_cypress(p)
-
+	# Clean private forecourt: clipped lawn and a dark, stone-free vehicle approach.
+	_vis(Vector3(0.0, 0.02, -62.0), Vector3(39.0, 0.04, 27.0), Color(0.12, 0.17, 0.12))
+	_vis(Vector3(0.0, 0.045, -51.5), Vector3(7.0, 0.02, 7.0), Color(0.19, 0.20, 0.19))
+	# No boulders, cypress trees or ground-level pool inside the villa perimeter.
+	for x in [-18.9, 18.9]:
+		_vis(Vector3(x, 1.15, -62.0), Vector3(0.12, 2.3, 23.0), Color(0.12, 0.15, 0.14))
+	for x in [-7.0, 7.0]:
+		for z in [-51.0, -57.0, -64.0, -70.0]:
+			_cyl_visual(Vector3(x, 0.42, z), 0.09, 0.84, steel)
+			_blob(Vector3(x, 0.86, z), 0.07, Color(0.7, 0.78, 0.72), Color(0.25, 0.38, 0.3))
 
 
 # Ground floor: stone walls with real window and door openings, a west living room, an east dining room,
@@ -3682,6 +3678,7 @@ func _villa_roof_and_terrace(plaster: Color, iron: Color) -> void:
 	_solid(Vector3(-12.9, pc, -63.0), Vector3(0.3, 0.8, 12.0), plaster)
 	_solid(Vector3(12.9, pc, -63.0), Vector3(0.3, 0.8, 12.0), plaster)
 
+	_villa_rooftop_pool()
 	_roof_unit(Vector3(-4.5, VILLA_ROOF + 0.3, -65.5), Vector3(2.2, 0.6, 1.4))
 	_roof_unit(Vector3(4.5, VILLA_ROOF + 0.25, -65.5), Vector3(1.8, 0.5, 1.2))
 	_cyl_visual(Vector3(9.5, VILLA_ROOF + 0.9, -65.5), 0.9, 1.8, Color(0.3, 0.32, 0.32))
@@ -3692,6 +3689,34 @@ func _villa_roof_and_terrace(plaster: Color, iron: Color) -> void:
 	_balcony_rail(Vector3(0.0, 0.0, -70.9), Vector3(32.0, 0.0, 0.2), iron)
 	_balcony_rail(Vector3(-10.5, 0.0, -55.1), Vector3(11.0, 0.0, 0.2), iron)
 	_balcony_rail(Vector3(10.5, 0.0, -55.1), Vector3(11.0, 0.0, 0.2), iron)
+
+
+# Private rooftop pool with coping, dark tile rim and reflective water.
+func _villa_rooftop_pool() -> void:
+	var y := VILLA_ROOF + 0.08
+	var coping := Color(0.72, 0.73, 0.70)
+	var tile := Color(0.035, 0.075, 0.085)
+	var water := StandardMaterial3D.new()
+	water.albedo_color = Color(0.035, 0.30, 0.38, 0.88)
+	water.metallic = 0.28
+	water.roughness = 0.12
+	water.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	water.clearcoat_enabled = true
+	water.clearcoat = 0.9
+	_box(Vector3(0.0, y + 0.12, -63.0), Vector3(8.4, 0.22, 3.8), tile)
+	_box(Vector3(0.0, y + 0.25, -65.0), Vector3(8.6, 0.28, 0.18), coping)
+	_box(Vector3(0.0, y + 0.25, -61.0), Vector3(8.6, 0.28, 0.18), coping)
+	_box(Vector3(-4.2, y + 0.25, -63.0), Vector3(0.18, 0.28, 3.8), coping)
+	_box(Vector3(4.2, y + 0.25, -63.0), Vector3(0.18, 0.28, 3.8), coping)
+	var water_mesh := MeshInstance3D.new()
+	var water_box := BoxMesh.new()
+	water_box.size = Vector3(8.0, 0.025, 3.4)
+	water_mesh.mesh = water_box
+	water_mesh.material_override = water
+	water_mesh.position = Vector3(0.0, y + 0.18, -63.0)
+	add_child(water_mesh)
+	_box(Vector3(-2.5, y + 0.17, -63.0), Vector3(0.035, 0.02, 3.0), Color(0.12, 0.65, 0.72), Vector3.ZERO, Color(0.04, 0.28, 0.34))
+	_box(Vector3(2.5, y + 0.17, -63.0), Vector3(0.035, 0.02, 3.0), Color(0.12, 0.65, 0.72), Vector3.ZERO, Color(0.04, 0.28, 0.34))
 
 
 # Entrance porch: a slab on two columns. The terrace floor above it is part of the same roof.
@@ -4258,7 +4283,7 @@ func _build_forest_detail_pass() -> void:
 		var r := randf_range(24.0, 112.0)
 		var x: float = cos(a) * r
 		var z: float = sin(a) * r
-		if absf(x) < 7.0 and z > -12.0 and z < 120.0:
+		if (absf(x) < 7.0 and z > -12.0 and z < 120.0) or _inside_villa_perimeter(x, z):
 			continue
 		var s := randf_range(0.65, 1.35)
 		shrub_xf.append(Transform3D(Basis.from_scale(Vector3(s * 1.5, s * 0.72, s * 1.2)), Vector3(x, s * 0.48, z)))
@@ -4268,6 +4293,8 @@ func _build_forest_detail_pass() -> void:
 		var r2 := randf_range(18.0, 112.0)
 		var x2: float = cos(a2) * r2
 		var z2: float = sin(a2) * r2
+		if _inside_villa_perimeter(x2, z2):
+			continue
 		var sx := randf_range(0.8, 2.8)
 		var sy := randf_range(0.35, 1.2)
 		rock_xf.append(Transform3D(Basis.from_scale(Vector3(sx, sy, sx * randf_range(0.7, 1.3))), Vector3(x2, sy * 0.65, z2)))
@@ -4275,6 +4302,8 @@ func _build_forest_detail_pass() -> void:
 	for i in range(18):
 		var lx := randf_range(-105.0, 105.0)
 		var lz := randf_range(-105.0, 105.0)
+		if _inside_villa_perimeter(lx, lz):
+			continue
 		var length := randf_range(2.2, 4.8)
 		var log := Transform3D(Basis(Vector3.UP, randf_range(0.0, TAU)) * Basis.from_scale(Vector3(0.22, 0.22, length)), Vector3(lx, 0.22, lz))
 		log_xf.append(log)
@@ -4295,6 +4324,10 @@ func _build_forest_detail_pass() -> void:
 			var pz := -4.0 + float(i) * 10.0
 			_vis(Vector3(side2 * 5.7, 0.48, pz), Vector3(0.10, 0.95, 0.10), Color(0.20, 0.22, 0.22))
 			_vis(Vector3(side2 * 5.7, 0.78, pz), Vector3(0.14, 0.12, 0.12), Color(0.78, 0.82, 0.78))
+
+
+func _inside_villa_perimeter(x: float, z: float) -> bool:
+	return absf(x) <= 21.5 and z >= -77.5 and z <= -46.5
 
 
 func _build_compound_architecture_pass() -> void:
