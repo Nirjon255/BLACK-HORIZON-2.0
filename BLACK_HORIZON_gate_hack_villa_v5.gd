@@ -295,6 +295,8 @@ func _main_ready() -> void:
 	_build_environment()
 	_build_hud()
 	_build_level()
+	_build_environment_upgrade()
+	_build_ambient_audio()
 	_build_objectives()
 	_spawn_player(start_pos)
 	_spawn_enemies()
@@ -2873,10 +2875,11 @@ func _build_cameras() -> void:
 		{"pos": Vector3(30.0, 3.2, -62.0), "yaw": 90.0},     # vehicle depot pole
 		{"pos": Vector3(5.1, 3.2, -48.8), "yaw": 180.0},     # villa garden gate post
 	]
-	var range_m := 22.0
-	var half_deg := 35.0
-	var cone_mat := _mat(Color(1.0, 0.9, 0.4, 0.12))
+	var range_m := 30.0
+	var half_deg := 42.0
+	var cone_mat := _mat(Color(1.0, 0.9, 0.4, 0.045))
 	cone_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	cone_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	var housing_mat := _mat(Color(0.88, 0.88, 0.86))
 	var dark_mat := _mat(Color(0.05, 0.05, 0.06))
 	var led_mat := _mat(Color(0.1, 0.9, 0.2), Color(0.1, 0.9, 0.2))
@@ -2920,6 +2923,19 @@ func _build_cameras() -> void:
 		led.material_override = led_mat
 		led.position = Vector3(0.15, 0.1, -0.12)
 		pivot.add_child(led)
+
+		# Weather hood, reinforced mount, and paired infrared illuminators.
+		_pivot_box(pivot, Vector3(0.52, 0.075, 0.42), Vector3(0.0, 0.17, -0.06), dark_mat)
+		_pivot_box(pivot, Vector3(0.10, 0.34, 0.10), Vector3(0.0, 0.0, 0.20), housing_mat)
+		for ir_x in [-0.105, 0.105]:
+			var ir := MeshInstance3D.new()
+			var ir_mesh := SphereMesh.new()
+			ir_mesh.radius = 0.025
+			ir_mesh.height = 0.05
+			ir.mesh = ir_mesh
+			ir.position = Vector3(ir_x, -0.075, -0.285)
+			ir.material_override = _mat(Color(0.12, 0.08, 0.08), Color(0.75, 0.08, 0.035))
+			pivot.add_child(ir)
 
 		# Yellow cone that shows what the camera can see.
 		var cone := MeshInstance3D.new()
@@ -4214,4 +4230,148 @@ func _stair_rail() -> void:
 		var zc: float = -59.5 - (float(kk) + 0.5) * 0.3
 		var top: float = float(kk + 1) * 0.18
 		_box(Vector3(-1.45, top + 0.405, zc), Vector3(0.07, 0.81, 0.07), wood)
+
+
+
+
+# ================= Environment and immersion upgrade =================
+# Visual-only pass: keeps the existing mission collision, navigation and controls.
+
+func _build_environment_upgrade() -> void:
+	if mission_no == 2:
+		_build_forest_detail_pass()
+		_build_compound_architecture_pass()
+	else:
+		_build_mountain_detail_pass()
+
+
+func _build_forest_detail_pass() -> void:
+	# Layered understory, boulders and fallen timber use MultiMesh to stay light.
+	var shrub_xf: Array = []
+	var shrub_col: Array = []
+	var rock_xf: Array = []
+	var rock_col: Array = []
+	var log_xf: Array = []
+	var log_col: Array = []
+	for i in range(155):
+		var a := randf() * TAU
+		var r := randf_range(24.0, 112.0)
+		var x := cos(a) * r
+		var z := sin(a) * r
+		if absf(x) < 7.0 and z > -12.0 and z < 120.0:
+			continue
+		var s := randf_range(0.65, 1.35)
+		shrub_xf.append(Transform3D(Basis.from_scale(Vector3(s * 1.5, s * 0.72, s * 1.2)), Vector3(x, s * 0.48, z)))
+		shrub_col.append(Color(0.12, 0.19, 0.12).lerp(Color(0.30, 0.34, 0.20), randf_range(0.0, 0.45)))
+	for i in range(72):
+		var a2 := randf() * TAU
+		var r2 := randf_range(18.0, 112.0)
+		var x2 := cos(a2) * r2
+		var z2 := sin(a2) * r2
+		var sx := randf_range(0.8, 2.8)
+		var sy := randf_range(0.35, 1.2)
+		rock_xf.append(Transform3D(Basis.from_scale(Vector3(sx, sy, sx * randf_range(0.7, 1.3))), Vector3(x2, sy * 0.65, z2)))
+		rock_col.append(Color(0.25, 0.28, 0.27).lerp(Color(0.62, 0.65, 0.65), randf_range(0.0, 0.32)))
+	for i in range(18):
+		var lx := randf_range(-105.0, 105.0)
+		var lz := randf_range(-105.0, 105.0)
+		var length := randf_range(2.2, 4.8)
+		var log := Transform3D(Basis(Vector3.UP, randf_range(0.0, TAU)) * Basis.from_scale(Vector3(0.22, 0.22, length)), Vector3(lx, 0.22, lz))
+		log_xf.append(log)
+		log_col.append(Color(0.19, 0.14, 0.10))
+	_far_multimesh(_sphere_mesh(), shrub_xf, shrub_col)
+	_far_multimesh(_sphere_mesh(), rock_xf, rock_col)
+	_far_multimesh(_cylinder_mesh(), log_xf, log_col)
+
+	# Snow banks and drainage shoulders beside the approach road.
+	for side in [-1.0, 1.0]:
+		for i in range(13):
+			var z3 := -8.0 + float(i) * 9.5
+			var drift := _vis(Vector3(side * randf_range(5.0, 6.4), randf_range(0.18, 0.34), z3), Vector3(randf_range(1.2, 2.0), randf_range(0.35, 0.65), randf_range(5.0, 9.0)), Color(0.72, 0.79, 0.84))
+			drift.material_override = _mat(Color(0.72, 0.79, 0.84))
+	# Roadside reflector posts, placed outside the drivable road.
+	for side2 in [-1.0, 1.0]:
+		for i in range(12):
+			var pz := -4.0 + float(i) * 10.0
+			_vis(Vector3(side2 * 5.7, 0.48, pz), Vector3(0.10, 0.95, 0.10), Color(0.20, 0.22, 0.22))
+			_vis(Vector3(side2 * 5.7, 0.78, pz), Vector3(0.14, 0.12, 0.12), Color(0.78, 0.82, 0.78))
+
+
+func _build_compound_architecture_pass() -> void:
+	# Barracks: recessed dark glazing, concrete lintels and wall-mounted lights.
+	for bx in [-22.0, 22.0]:
+		for wx in [-4.0, 0.0, 4.0]:
+			_vis(Vector3(bx + wx, 2.15, -26.42), Vector3(1.35, 1.05, 0.055), Color(0.10, 0.15, 0.17))
+			_vis(Vector3(bx + wx, 2.72, -26.36), Vector3(1.55, 0.12, 0.18), Color(0.48, 0.49, 0.45))
+			_vis(Vector3(bx + wx, 1.58, -26.36), Vector3(1.55, 0.12, 0.18), Color(0.48, 0.49, 0.45))
+		_vis(Vector3(bx, 3.25, -30.0), Vector3(12.4, 0.18, 7.4), Color(0.27, 0.29, 0.28))
+		for lx in [-5.0, 5.0]:
+			_vis(Vector3(bx + lx, 2.95, -26.1), Vector3(0.35, 0.18, 0.18), Color(0.72, 0.68, 0.52), 0.0)
+	# Vehicle depot: segmented roller shutter and loading-bay safety markings.
+	for i in range(12):
+		_vis(Vector3(28.0 - 3.0 + float(i) * 0.55, 1.45, -69.35), Vector3(0.025, 2.7, 0.035), Color(0.18, 0.20, 0.21))
+	for side3 in [-1.0, 1.0]:
+		_vis(Vector3(28.0 + side3 * 6.7, 2.3, -68.8), Vector3(0.22, 4.6, 0.24), Color(0.23, 0.25, 0.25))
+		_vis(Vector3(28.0 + side3 * 6.72, 0.12, -68.6), Vector3(0.7, 0.24, 1.0), Color(0.72, 0.55, 0.20))
+	# Utility poles and sagging cable along the road edge.
+	for side4 in [-1.0, 1.0]:
+		for i in range(4):
+			var pz2 := 8.0 + float(i) * 30.0
+			_vis(Vector3(side4 * 10.0, 4.0, pz2), Vector3(0.22, 8.0, 0.22), Color(0.22, 0.19, 0.14))
+			_vis(Vector3(side4 * 10.0, 7.8, pz2), Vector3(2.6, 0.16, 0.16), Color(0.22, 0.19, 0.14))
+	# Perimeter floodlights.
+	for fp in [Vector3(-39.0, 5.4, -45.0), Vector3(39.0, 5.4, -45.0), Vector3(-39.0, 5.4, -78.0), Vector3(39.0, 5.4, -78.0)]:
+		_vis(fp, Vector3(0.72, 0.34, 0.30), Color(0.16, 0.18, 0.18))
+
+
+func _build_mountain_detail_pass() -> void:
+	var mountain_xf: Array = []
+	var mountain_col: Array = []
+	for i in range(55):
+		var a := randf() * TAU
+		var r := randf_range(55.0, 112.0)
+		var h := randf_range(3.0, 12.0)
+		var w := randf_range(2.0, 7.0)
+		mountain_xf.append(Transform3D(Basis.from_scale(Vector3(w, h, w)), Vector3(cos(a) * r, h * 0.5, sin(a) * r)))
+		mountain_col.append(Color(0.22, 0.25, 0.26).lerp(Color(0.68, 0.72, 0.74), randf_range(0.0, 0.35)))
+	_far_multimesh(_cone_mesh(), mountain_xf, mountain_col)
+
+
+func _build_ambient_audio() -> void:
+	# Procedural low-level wind and distant forest calls; no external audio files required.
+	var rate := 22050
+	var seconds := 8.0
+	var count := int(rate * seconds)
+	var data := PackedByteArray()
+	data.resize(count * 2)
+	var filtered := 0.0
+	for i in range(count):
+		var t := float(i) / float(rate)
+		var raw := randf() * 2.0 - 1.0
+		filtered += (raw - filtered) * 0.018
+		var gust := 0.65 + 0.22 * sin(TAU * 0.11 * t) + 0.10 * sin(TAU * 0.27 * t)
+		var sample := filtered * gust * 0.20
+		sample += sin(TAU * 54.0 * t) * 0.025
+		for bird_start in [1.25, 3.8, 6.15]:
+			var bt := t - bird_start
+			if bt >= 0.0 and bt < 0.42:
+				var sweep := 1850.0 + 700.0 * sin(PI * bt / 0.42)
+				sample += sin(TAU * sweep * bt) * sin(PI * bt / 0.42) * 0.035
+		var fade := minf(minf(t / 0.25, (seconds - t) / 0.25), 1.0)
+		sample *= fade
+		data.encode_s16(i * 2, int(clampf(sample, -0.8, 0.8) * 32767.0))
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = rate
+	stream.stereo = false
+	stream.data = data
+	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	stream.loop_begin = 0
+	stream.loop_end = count
+	var ambience := AudioStreamPlayer.new()
+	ambience.name = "ForestAmbience"
+	ambience.stream = stream
+	ambience.volume_db = -18.0
+	add_child(ambience)
+	ambience.play()
 
