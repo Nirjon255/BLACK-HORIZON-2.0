@@ -4165,33 +4165,23 @@ func _villa_decor() -> void:
 
 
 func _decor_exterior() -> void:
-	var hedge := Color(0.14, 0.3, 0.12)
-	var stone := Color(0.7, 0.68, 0.62)
+	var hedge := Color(0.07, 0.13, 0.09)
+	var stone := Color(0.12, 0.14, 0.15)
 	var green := Color(0.16, 0.36, 0.14)
 	var wood := Color(0.36, 0.25, 0.15)
 	var ceramic := Color(0.82, 0.8, 0.74)
 	# Hedges along the inside of the west and east garden walls. Solid, so they form a real border.
 	_solid(Vector3(-19.2, 0.55, -62.5), Vector3(0.9, 1.1, 20.0), hedge)
 	_solid(Vector3(19.2, 0.55, -62.5), Vector3(0.9, 1.1, 20.0), hedge)
-	# Flower beds either side of the drive, the fountain, a bench and lanterns.
-	_flowers(Vector3(-9.0, 0.0, -49.6), 3.2, 1.4)
-	_flowers(Vector3(9.0, 0.0, -49.6), 3.2, 1.4)
-	_fountain(Vector3(-13.5, 0.0, -51.0))
-	_bench(Vector3(13.8, 0.0, -50.6))
+	# Keep the gangster estate forecourt uncluttered: no rock garden, fountain or flower beds.)
 	for p in [Vector3(-5.6, 0.0, -49.0), Vector3(5.6, 0.0, -49.0), Vector3(-5.6, 0.0, -54.0), Vector3(5.6, 0.0, -54.0)]:
 		_lantern(p)
-	# Potted plants on the porch, either side of the door.
-	_potted(Vector3(-3.2, 0.0, -53.5), 0.3, 0.5, 0.42, green)
-	_potted(Vector3(3.2, 0.0, -53.5), 0.3, 0.5, 0.42, green)
+	# Porch remains clear for security patrols.
 	# Pilasters on the front facade, between the windows and at the corners.
 	for x in [-15.5, -5.5, 5.5, 15.5]:
 		var px: float = x
 		_box(Vector3(px, 1.65, -54.92), Vector3(0.5, 3.3, 0.24), stone)
-	# Window boxes under the first-floor windows on the balcony side.
-	for x in [-9.5, 9.5]:
-		var wx: float = x
-		_box(Vector3(wx, 4.3, -56.62), Vector3(1.7, 0.25, 0.35), wood)
-		_flowers_row(Vector3(wx, 4.5, -56.62), 1.6, Color(0.9, 0.4, 0.55))
+	# Dark metal window trim replaces decorative flower boxes.
 	# Parasol on the south side of the roof terrace.
 	_cyl_visual(Vector3(-13.0, 3.6 + 1.1, -56.0), 0.04, 2.2, wood)
 	_cone(Vector3(-13.0, 5.6, -56.0), 1.3, 0.12, 0.35, Color(0.72, 0.22, 0.18))
@@ -4199,10 +4189,7 @@ func _decor_exterior() -> void:
 	_box(Vector3(14.5, 3.6 + 0.225, -62.0), Vector3(0.9, 0.45, 2.4), Color(0.32, 0.3, 0.27))
 	_box(Vector3(14.92, 4.1, -62.0), Vector3(0.25, 0.6, 2.4), Color(0.32, 0.3, 0.27))
 	_box(Vector3(13.6, 3.6 + 0.2, -60.0), Vector3(0.6, 0.4, 0.9), wood)
-	# Planters with shrubs on the west side of the terrace.
-	_box(Vector3(-14.8, 3.6 + 0.3, -68.0), Vector3(0.8, 0.6, 1.4), ceramic)
-	_blob(Vector3(-14.8, 4.35, -68.0), 0.42, green)
-	_blob(Vector3(-14.8, 4.5, -67.5), 0.3, Color(0.22, 0.42, 0.18))
+	# Open terrace edge leaves clear sightlines around the rooftop pool.
 
 
 func _decor_ground() -> void:
