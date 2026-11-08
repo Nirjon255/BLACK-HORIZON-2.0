@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cxmokjvrutkcu"]
+
+[ext_resource type="Script" uid="uid://be7iytn0dhrrl" path="res://black_horizon.gd" id="1_ig7tw"]
+
+[node name="Main" type="CharacterBody3D" unique_id=1549001402]
+script = ExtResource("1_ig7tw")

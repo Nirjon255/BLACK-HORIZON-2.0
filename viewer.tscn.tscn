@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cro00c7qu0xog"]
+
+[ext_resource type="Script" uid="uid://6hymkey1k1p4" path="res://soldier_viewer.gd" id="1_8un52"]
+
+[node name="soldier_viewer_gd" type="Node3D" unique_id=1165097464]
+script = ExtResource("1_8un52")
