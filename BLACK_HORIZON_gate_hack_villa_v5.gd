@@ -18,7 +18,7 @@ const DRIVE_POS := Vector3(-12, 0, -17)
 const SIGNAL_POS := Vector3(-9.5, 0.0, -18.5)
 const FOREST_LAPTOP_POS := Vector3(9.0, 0.1, -66.0)
 const FOREST_EXTRACT_POS := Vector3(0.0, 0.0, -112.0)
-const FOREST_START := Vector3(0.0, 0.0, 92.0)
+const FOREST_START: Vector3 = Vector3(0.0, 0.0, 92.0)
 const FOREST_CHECKPOINT_AREA := Vector3(0.0, 0.0, 82.0)
 const FOREST_CHECKPOINT_RESPAWN: Vector3 = Vector3(0.0, 0.0, 86.0)
 const EXTRACT_POS := Vector3(0, 0, -44)
@@ -138,7 +138,7 @@ var gate_panel: Node3D
 var gate_collision: CollisionShape3D
 var gate_tween: Tween
 var lbl_alarm: Label
-var alarm_sfx: AudioStreamPlayer
+var alarm_sfx: AudioStreamPlayer3D
 var gate_sfx: AudioStreamPlayer
 var cameras: Array = []
 var signal_area: Area3D
