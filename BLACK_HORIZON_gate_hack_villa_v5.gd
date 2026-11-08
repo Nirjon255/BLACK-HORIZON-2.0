@@ -2299,7 +2299,7 @@ func _truck(c: Vector3) -> void:
 		_arch_visual(c + Vector3(0.0, 2.28, zoff), Vector3(2.18, 0.055, 0.055), metal)
 	# Cab shell, sloped windshield, side windows and front engine hood.
 	_solid(c + Vector3(0.0, 1.10, -3.08), Vector3(2.22, 1.72, 1.82), paint)
-	_arch_visual(c + Vector3(0.0, 1.66, -4.015), Vector3(1.88, 0.68, 0.055), glass, -7.0)
+	_arch_visual(c + Vector3(0.0, 1.66, -4.015), Vector3(1.88, 0.68, 0.055), glass)
 	_arch_visual(c + Vector3(-1.125, 1.58, -3.28), Vector3(0.055, 0.62, 0.72), glass)
 	_arch_visual(c + Vector3(1.125, 1.58, -3.28), Vector3(0.055, 0.62, 0.72), glass)
 	_arch_visual(c + Vector3(0.0, 0.76, -4.05), Vector3(2.18, 0.40, 1.12), paint_light)
@@ -2323,7 +2323,7 @@ func _truck(c: Vector3) -> void:
 		_arch_visual(c + Vector3(side * 1.38, 1.84, -3.48), Vector3(0.035, 0.20, 0.18), glass)
 		_arch_visual(c + Vector3(side * 1.23, 0.54, -2.95), Vector3(0.18, 0.12, 0.78), metal)
 	for wiper in [-0.38, 0.38]:
-		_arch_visual(c + Vector3(wiper, 1.39, -4.055), Vector3(0.045, 0.025, 0.52), rubber, -12.0)
+		_arch_visual(c + Vector3(wiper, 1.39, -4.055), Vector3(0.045, 0.025, 0.52), rubber, -0.08)
 	# Four deep-tread tyres with steel hubs and raised tread blocks.
 	for side in [-1.0, 1.0]:
 		for zoff in [-2.45, 1.95]:
