@@ -2264,23 +2264,42 @@ func _block_building(c: Vector3, size: Vector3, col: Color, door_w: float) -> vo
 
 
 func _truck(c: Vector3) -> void:
-	var paint := Color(0.25, 0.29, 0.23)
-	var rubber := Color(0.035, 0.04, 0.04)
-	var metal := Color(0.18, 0.2, 0.2)
-	# Main cargo body and forward cab.
-	_solid(c + Vector3(0.0, 1.1, 0.0), Vector3(2.4, 2.2, 5.0), paint)
-	_solid(c + Vector3(0.0, 0.9, -3.4), Vector3(2.2, 1.8, 1.8), paint)
-	_arch_visual(c + Vector3(0.0, 1.42, -4.32), Vector3(1.8, 0.68, 0.05), Color(0.045, 0.075, 0.09))
-	_arch_visual(c + Vector3(-1.14, 1.55, -3.7), Vector3(0.05, 0.55, 0.52), Color(0.045, 0.075, 0.09))
-	_arch_visual(c + Vector3(1.14, 1.55, -3.7), Vector3(0.05, 0.55, 0.52), Color(0.045, 0.075, 0.09))
-	_arch_visual(c + Vector3(0.0, 0.55, -4.35), Vector3(2.35, 0.24, 0.18), metal)
-	_arch_visual(c + Vector3(0.0, 1.0, -4.34), Vector3(0.85, 0.45, 0.06), Color(0.08, 0.09, 0.09))
+	var paint := Color(0.16, 0.20, 0.17)
+	var rubber := Color(0.025, 0.028, 0.03)
+	var metal := Color(0.12, 0.14, 0.15)
+	var glass := Color(0.035, 0.075, 0.09)
+	# Chassis and squared cargo bed with reinforced side panels.
+	_solid(c + Vector3(0.0, 0.62, -0.05), Vector3(2.25, 0.42, 7.0), metal)
+	_solid(c + Vector3(0.0, 1.35, 0.15), Vector3(2.35, 1.75, 4.35), paint)
 	for side in [-1.0, 1.0]:
-		for zoff in [-1.65, 1.55]:
-			_cyl_visual(c + Vector3(side * 1.23, 0.58, zoff), 0.48, 0.26, rubber, Vector3(0.0, 0.0, PI * 0.5))
-			_cyl_visual(c + Vector3(side * 1.375, 0.58, zoff), 0.22, 0.035, metal, Vector3(0.0, 0.0, PI * 0.5))
+		_arch_visual(c + Vector3(side * 1.2, 1.42, 0.15), Vector3(0.10, 1.55, 4.45), metal)
+		for zoff in [-1.35, -0.25, 0.85, 1.75]:
+			_arch_visual(c + Vector3(side * 1.255, 1.35, zoff), Vector3(0.035, 1.35, 0.055), Color(0.30, 0.32, 0.29))
+	# Driver cab, windshield, side glass and front fascia.
+	_solid(c + Vector3(0.0, 1.05, -3.05), Vector3(2.2, 1.75, 1.85), paint)
+	_arch_visual(c + Vector3(0.0, 1.62, -4.02), Vector3(1.88, 0.72, 0.055), glass, -7.0)
+	_arch_visual(c + Vector3(-1.12, 1.55, -3.25), Vector3(0.055, 0.62, 0.72), glass)
+	_arch_visual(c + Vector3(1.12, 1.55, -3.25), Vector3(0.055, 0.62, 0.72), glass)
+	_arch_visual(c + Vector3(0.0, 0.48, -4.02), Vector3(2.35, 0.30, 0.22), metal)
+	_arch_visual(c + Vector3(0.0, 0.92, -4.04), Vector3(0.82, 0.42, 0.07), Color(0.045, 0.05, 0.05))
 	for side in [-1.0, 1.0]:
-		_arch_visual(c + Vector3(side * 0.72, 1.1, -4.38), Vector3(0.24, 0.18, 0.06), Color(0.88, 0.75, 0.42))
+		_arch_visual(c + Vector3(side * 0.78, 1.05, -4.08), Vector3(0.30, 0.22, 0.08), Color(0.88, 0.76, 0.48))
+		_arch_visual(c + Vector3(side * 0.93, 1.85, -3.35), Vector3(0.08, 0.32, 0.30), metal)
+		_arch_visual(c + Vector3(side * 1.25, 1.05, -3.55), Vector3(0.22, 0.48, 0.12), metal)
+		for zoff in [-2.55, 1.95]:
+			_cyl_visual(c + Vector3(side * 1.22, 0.58, zoff), 0.52, 0.30, rubber, Vector3(0.0, 0.0, PI * 0.5))
+			_cyl_visual(c + Vector3(side * 1.39, 0.58, zoff), 0.25, 0.045, metal, Vector3(0.0, 0.0, PI * 0.5))
+			_cyl_visual(c + Vector3(side * 1.42, 0.58, zoff), 0.09, 0.05, Color(0.42, 0.44, 0.42), Vector3(0.0, 0.0, PI * 0.5))
+			for tread_i in range(8):
+				var angle := float(tread_i) * TAU / 8.0
+				_box(c + Vector3(side * 1.39, 0.58 + cos(angle) * 0.48, zoff + sin(angle) * 0.48), Vector3(0.08, 0.10, 0.16), rubber)
+	_arch_visual(c + Vector3(0.0, 0.52, 2.48), Vector3(2.5, 0.22, 0.22), metal)
+	for side in [-1.0, 1.0]:
+		_arch_visual(c + Vector3(side * 0.92, 0.88, 2.42), Vector3(0.18, 0.42, 0.08), Color(0.55, 0.07, 0.045))
+		_arch_visual(c + Vector3(side * 1.18, 2.05, 0.1), Vector3(0.10, 0.16, 0.18), metal)
+	_arch_visual(c + Vector3(0.0, 2.30, 0.15), Vector3(2.30, 0.10, 4.2), Color(0.12, 0.15, 0.13))
+	for zoff in [-1.7, -0.7, 0.3, 1.3]:
+		_arch_visual(c + Vector3(0.0, 2.22, zoff), Vector3(2.2, 0.055, 0.055), Color(0.28, 0.30, 0.27))
 
 
 func _watchtower(c: Vector3) -> void:
