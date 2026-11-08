@@ -139,6 +139,7 @@ var gate_collision: CollisionShape3D
 var gate_tween: Tween
 var lbl_alarm: Label
 var alarm_sfx: AudioStreamPlayer
+var gate_sfx: AudioStreamPlayer
 var cameras: Array = []
 var signal_area: Area3D
 var mission_no := 1
@@ -281,6 +282,7 @@ func _unhandled_input(event: InputEvent) -> void:
 # ================= MAIN =================
 
 func _main_ready() -> void:
+	add_to_group("mission_controller")
 	mission_no = Engine.get_meta("mission", 1)
 	if mission_no == 2:
 		drive_pos = FOREST_LAPTOP_POS
@@ -1124,6 +1126,11 @@ func _fire_ray() -> void:
 	if result.is_empty():
 		return
 	var hit = result["collider"]
+	if hit is Node and hit.is_in_group("security_cameras"):
+		var controller := get_tree().get_first_node_in_group("mission_controller")
+		if controller:
+			controller.call("_destroy_security_camera", hit)
+		return
 	if hit.has_method("take_damage"):
 		var killed: bool = hit.take_damage(30 if slot == 2 else BULLET_DAMAGE, result["position"])
 		hit_confirmed.emit(killed)
@@ -2901,6 +2908,15 @@ func _build_cameras() -> void:
 		var pivot := Node3D.new()
 		pivot.position = s["pos"]
 		add_child(pivot)
+		var camera_body := StaticBody3D.new()
+		camera_body.add_to_group("security_cameras")
+		var camera_hit := CollisionShape3D.new()
+		var camera_shape := SphereShape3D.new()
+		camera_shape.radius = 0.42
+		camera_hit.shape = camera_shape
+		camera_hit.position = Vector3(0.0, 0.0, -0.12)
+		camera_body.add_child(camera_hit)
+		pivot.add_child(camera_body)
 
 		# CCTV housing, mounting bracket, lens and status light.
 		_pivot_box(pivot, Vector3(0.42, 0.26, 0.26), Vector3.ZERO, housing_mat)
@@ -2959,6 +2975,7 @@ func _build_cameras() -> void:
 			"led": led_mat,
 			"range": range_m,
 			"half": half_deg,
+			"destroyed": false,
 		})
 
 
@@ -2977,6 +2994,8 @@ func _update_cameras(delta: float) -> void:
 		return
 	var target: Vector3 = player.global_position + Vector3(0.0, 1.0, 0.0)
 	for cam in cameras:
+		if cam.get("destroyed", false):
+			continue
 		cam["t"] += delta * 0.7
 		var pivot: Node3D = cam["pivot"]
 		pivot.rotation.y = cam["base"] + sin(cam["t"]) * cam["sweep"]
@@ -2991,6 +3010,25 @@ func _update_cameras(delta: float) -> void:
 		led.emission = c
 		if cam["aware"] >= 1.0:
 			_raise_alarm(pivot.global_position)
+			return
+
+
+func _destroy_security_camera(camera_body: Node) -> void:
+	for cam in cameras:
+		if cam.get("destroyed", false):
+			continue
+		var pivot: Node3D = cam["pivot"]
+		if camera_body.get_parent() == pivot:
+			cam["destroyed"] = true
+			cam["aware"] = 0.0
+			pivot.visible = false
+			camera_body.set_deferred("collision_layer", 0)
+			camera_body.set_deferred("collision_mask", 0)
+			var spark := _blob(pivot.global_position, 0.14, Color(1.0, 0.38, 0.08), Color(1.0, 0.18, 0.025))
+			var flash_tween := create_tween()
+			flash_tween.tween_property(spark, "scale", Vector3.ZERO, 0.28)
+			flash_tween.tween_callback(spark.queue_free)
+			_status("CCTV DESTROYED. Camera feed offline.", 2.5)
 			return
 
 
@@ -3019,9 +3057,8 @@ func _raise_alarm(pos: Vector3) -> void:
 		alarm_sfx = AudioStreamPlayer.new()
 		add_child(alarm_sfx)
 	alarm_sfx.stream = _alarm_stream()
-	alarm_sfx.volume_db = -6.0
+	alarm_sfx.volume_db = -9.0
 	alarm_sfx.play()
-	get_tree().create_timer(6.0).timeout.connect(alarm_sfx.stop)
 	get_tree().call_group("enemies", "alarm", pos)
 
 
@@ -3036,26 +3073,29 @@ func _reset_alarm() -> void:
 		cam["aware"] = 0.0
 
 
-# A rising and falling siren tone, generated in code.
+# Layered two-tone security siren, looped until the alarm is reset.
 func _alarm_stream() -> AudioStreamWAV:
 	var rate := 22050
-	var n := int(1.2 * rate)
+	var n := int(2.8 * rate)
 	var buf := PackedByteArray()
 	buf.resize(n * 2)
 	for i in range(n):
 		var t := float(i) / float(rate)
-		var f := 800.0 + 300.0 * sin(TAU * 2.0 * t)
-		var v := sin(TAU * f * t) * 0.35
-		buf.encode_s16(i * 2, int(clampf(v, -1.0, 1.0) * 32767.0))
-	var w := AudioStreamWAV.new()
-	w.format = AudioStreamWAV.FORMAT_16_BITS
-	w.mix_rate = rate
-	w.stereo = false
-	w.data = buf
-	w.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	w.loop_begin = 0
-	w.loop_end = n
-	return w
+		var sweep := 0.5 + 0.5 * sin(TAU * 0.72 * t)
+		var f := 610.0 + 390.0 * sweep
+		var phase := TAU * f * t
+		var pulse := 0.72 + 0.28 * sin(TAU * 1.4 * t)
+		var sample := (sin(phase) * 0.25 + sin(phase * 2.0) * 0.07 + sin(TAU * 92.0 * t) * 0.035) * pulse
+		buf.encode_s16(i * 2, int(clampf(sample, -1.0, 1.0) * 32767.0))
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = rate
+	wav.stereo = false
+	wav.data = buf
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_begin = 0
+	wav.loop_end = n
+	return wav
 
 
 # Called on every guard when the alarm goes off: they investigate the camera that spotted you.
@@ -3358,11 +3398,45 @@ func _unlock_security_gate() -> void:
 		gate_tween = create_tween()
 		gate_tween.set_trans(Tween.TRANS_CUBIC)
 		gate_tween.set_ease(Tween.EASE_IN_OUT)
-		gate_tween.tween_property(gate_panel, "position:x", 10.2, 2.8)
+		gate_tween.tween_property(gate_panel, "position:x", 0.06, 0.08)
+		gate_tween.tween_property(gate_panel, "position:x", -0.06, 0.08)
+		gate_tween.tween_property(gate_panel, "position:x", 0.0, 0.08)
+		gate_tween.tween_property(gate_panel, "position:y", 3.35, 3.8)
 	_set_captured(true)
-	_status("GATE UNLOCKED. Security barrier opening.", 5.0)
+	_play_gate_motor()
+	_status("ACCESS GRANTED. Hydraulic security barrier rising.", 5.0)
 	if player:
 		player.set_controls(true)
+
+
+func _play_gate_motor() -> void:
+	if gate_sfx == null:
+		gate_sfx = AudioStreamPlayer.new()
+		add_child(gate_sfx)
+	gate_sfx.stream = _gate_motor_stream()
+	gate_sfx.volume_db = -8.0
+	gate_sfx.play()
+
+
+func _gate_motor_stream() -> AudioStreamWAV:
+	var rate := 22050
+	var n := int(4.0 * rate)
+	var data := PackedByteArray()
+	data.resize(n * 2)
+	for i in range(n):
+		var t := float(i) / float(rate)
+		var envelope := minf(t / 0.18, 1.0) * minf((4.0 - t) / 0.45, 1.0)
+		var grind := sin(TAU * (48.0 + 9.0 * sin(TAU * 0.35 * t)) * t) * 0.22
+		var metal := sin(TAU * 173.0 * t) * 0.055 + sin(TAU * 287.0 * t) * 0.025
+		var rattle := (randf() * 2.0 - 1.0) * 0.035
+		var sample := (grind + metal + rattle) * clampf(envelope, 0.0, 1.0)
+		data.encode_s16(i * 2, int(clampf(sample, -1.0, 1.0) * 32767.0))
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = rate
+	wav.stereo = false
+	wav.data = data
+	return wav
 
 
 # World position to a point on the tablet map. The map covers -120..120 in x and z, north at the top.
