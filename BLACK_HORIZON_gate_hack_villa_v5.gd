@@ -365,22 +365,31 @@ func _bind_mouse(action: String, button: MouseButton) -> void:
 func _build_environment() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.62, 0.68, 0.74)
+	env.background_color = Color(0.48, 0.55, 0.62)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.62, 0.67, 0.74)
-	env.ambient_light_energy = 1.0
+	env.ambient_light_color = Color(0.48, 0.54, 0.60)
+	env.ambient_light_energy = 0.82
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_exposure = 1.05
+	env.adjustment_enabled = true
+	env.adjustment_contrast = 1.08
+	env.adjustment_saturation = 0.92
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.75, 0.8, 0.86)
-	env.fog_density = 0.008
+	env.fog_light_color = Color(0.66, 0.72, 0.78)
+	env.fog_density = 0.006
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
 
+	# One controlled directional shadow gives buildings and vehicles readable depth.
+	# The shorter shadow distance keeps the Compatibility renderer affordable.
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-35.0, 30.0, 0.0)
-	sun.light_color = Color(0.85, 0.9, 1.0)
-	sun.light_energy = 1.2
-	sun.shadow_enabled = false
+	sun.rotation_degrees = Vector3(-38.0, 28.0, 0.0)
+	sun.light_color = Color(0.88, 0.91, 0.94)
+	sun.light_energy = 1.15
+	sun.shadow_enabled = true
+	sun.directional_shadow_max_distance = 85.0
+	sun.shadow_bias = 0.06
 	add_child(sun)
 
 
@@ -2264,43 +2273,73 @@ func _block_building(c: Vector3, size: Vector3, col: Color, door_w: float) -> vo
 
 
 func _truck(c: Vector3) -> void:
-	var paint := Color(0.16, 0.20, 0.17)
-	var rubber := Color(0.025, 0.028, 0.03)
-	var metal := Color(0.12, 0.14, 0.15)
-	var glass := Color(0.035, 0.075, 0.09)
-	# Chassis and squared cargo bed with reinforced side panels.
-	_solid(c + Vector3(0.0, 0.62, -0.05), Vector3(2.25, 0.42, 7.0), metal)
-	_solid(c + Vector3(0.0, 1.35, 0.15), Vector3(2.35, 1.75, 4.35), paint)
+	# Static 4x4 military transport truck. The main body remains collision-enabled;
+	# trim, glass, lamps and wheel detailing are lightweight visual meshes.
+	var paint := Color(0.14, 0.18, 0.15)
+	var paint_light := Color(0.22, 0.26, 0.22)
+	var rubber := Color(0.022, 0.025, 0.026)
+	var metal := Color(0.10, 0.12, 0.12)
+	var glass := Color(0.025, 0.065, 0.078)
+	var lamp := Color(0.82, 0.72, 0.48)
+	# Ladder chassis, lower frame and protected fuel tank.
+	_solid(c + Vector3(0.0, 0.62, -0.05), Vector3(2.35, 0.38, 7.15), metal)
+	_arch_visual(c + Vector3(0.0, 0.42, 0.0), Vector3(1.85, 0.18, 6.4), Color(0.055, 0.065, 0.06))
+	_arch_visual(c + Vector3(-0.82, 0.56, 0.55), Vector3(0.42, 0.35, 0.95), Color(0.18, 0.19, 0.16))
+	# Cargo bed, pressed side panels, ribs and rear tailgate.
+	_solid(c + Vector3(0.0, 1.35, 0.25), Vector3(2.30, 1.55, 4.45), paint)
+	_arch_visual(c + Vector3(0.0, 2.16, 0.25), Vector3(2.18, 0.08, 4.25), paint_light)
 	for side in [-1.0, 1.0]:
-		_arch_visual(c + Vector3(side * 1.2, 1.42, 0.15), Vector3(0.10, 1.55, 4.45), metal)
-		for zoff in [-1.35, -0.25, 0.85, 1.75]:
-			_arch_visual(c + Vector3(side * 1.255, 1.35, zoff), Vector3(0.035, 1.35, 0.055), Color(0.30, 0.32, 0.29))
-	# Driver cab, windshield, side glass and front fascia.
-	_solid(c + Vector3(0.0, 1.05, -3.05), Vector3(2.2, 1.75, 1.85), paint)
-	_arch_visual(c + Vector3(0.0, 1.62, -4.02), Vector3(1.88, 0.72, 0.055), glass, -7.0)
-	_arch_visual(c + Vector3(-1.12, 1.55, -3.25), Vector3(0.055, 0.62, 0.72), glass)
-	_arch_visual(c + Vector3(1.12, 1.55, -3.25), Vector3(0.055, 0.62, 0.72), glass)
-	_arch_visual(c + Vector3(0.0, 0.48, -4.02), Vector3(2.35, 0.30, 0.22), metal)
-	_arch_visual(c + Vector3(0.0, 0.92, -4.04), Vector3(0.82, 0.42, 0.07), Color(0.045, 0.05, 0.05))
+		_arch_visual(c + Vector3(side * 1.17, 1.42, 0.25), Vector3(0.10, 1.45, 4.55), metal)
+		for zoff in [-1.55, -0.55, 0.45, 1.45, 2.05]:
+			_arch_visual(c + Vector3(side * 1.23, 1.42, zoff), Vector3(0.045, 1.34, 0.065), paint_light)
+	_arch_visual(c + Vector3(0.0, 1.40, 2.53), Vector3(2.28, 1.42, 0.12), paint)
+	_arch_visual(c + Vector3(0.0, 0.92, 2.61), Vector3(1.55, 0.08, 0.04), metal)
+	# Canvas frame and support bows above the open cargo bed.
+	for zoff in [-1.45, -0.25, 0.95, 2.0]:
+		_arch_visual(c + Vector3(0.0, 2.28, zoff), Vector3(2.18, 0.055, 0.055), metal)
+	# Cab shell, sloped windshield, side windows and front engine hood.
+	_solid(c + Vector3(0.0, 1.10, -3.08), Vector3(2.22, 1.72, 1.82), paint)
+	_arch_visual(c + Vector3(0.0, 1.66, -4.015), Vector3(1.88, 0.68, 0.055), glass, -7.0)
+	_arch_visual(c + Vector3(-1.125, 1.58, -3.28), Vector3(0.055, 0.62, 0.72), glass)
+	_arch_visual(c + Vector3(1.125, 1.58, -3.28), Vector3(0.055, 0.62, 0.72), glass)
+	_arch_visual(c + Vector3(0.0, 0.76, -4.05), Vector3(2.18, 0.40, 1.12), paint_light)
+	_arch_visual(c + Vector3(0.0, 0.50, -4.18), Vector3(2.42, 0.22, 0.24), metal)
+	# Front grille with vertical slats, bumper, tow hooks and headlights.
+	_arch_visual(c + Vector3(0.0, 0.91, -4.17), Vector3(0.76, 0.38, 0.055), Color(0.035, 0.045, 0.043))
+	for gx in [-0.27, -0.135, 0.0, 0.135, 0.27]:
+		_arch_visual(c + Vector3(gx, 0.91, -4.205), Vector3(0.035, 0.34, 0.025), metal)
 	for side in [-1.0, 1.0]:
-		_arch_visual(c + Vector3(side * 0.78, 1.05, -4.08), Vector3(0.30, 0.22, 0.08), Color(0.88, 0.76, 0.48))
-		_arch_visual(c + Vector3(side * 0.93, 1.85, -3.35), Vector3(0.08, 0.32, 0.30), metal)
-		_arch_visual(c + Vector3(side * 1.25, 1.05, -3.55), Vector3(0.22, 0.48, 0.12), metal)
-		for zoff in [-2.55, 1.95]:
-			_cyl_visual(c + Vector3(side * 1.22, 0.58, zoff), 0.52, 0.30, rubber, Vector3(0.0, 0.0, PI * 0.5))
-			_cyl_visual(c + Vector3(side * 1.39, 0.58, zoff), 0.25, 0.045, metal, Vector3(0.0, 0.0, PI * 0.5))
-			_cyl_visual(c + Vector3(side * 1.42, 0.58, zoff), 0.09, 0.05, Color(0.42, 0.44, 0.42), Vector3(0.0, 0.0, PI * 0.5))
-			for tread_i in range(8):
-				var angle := float(tread_i) * TAU / 8.0
-				_box(c + Vector3(side * 1.39, 0.58 + cos(angle) * 0.48, zoff + sin(angle) * 0.48), Vector3(0.08, 0.10, 0.16), rubber)
-	_arch_visual(c + Vector3(0.0, 0.52, 2.48), Vector3(2.5, 0.22, 0.22), metal)
+		_arch_visual(c + Vector3(side * 0.82, 1.04, -4.18), Vector3(0.30, 0.24, 0.075), lamp)
+		_arch_visual(c + Vector3(side * 0.98, 0.72, -4.17), Vector3(0.18, 0.12, 0.10), Color(0.62, 0.12, 0.055))
+		_arch_visual(c + Vector3(side * 1.18, 0.58, -4.08), Vector3(0.12, 0.48, 0.18), metal)
+	_arch_visual(c + Vector3(0.0, 0.43, -4.22), Vector3(2.65, 0.18, 0.28), metal)
+	for side in [-0.72, 0.72]:
+		_arch_visual(c + Vector3(side, 0.32, -4.30), Vector3(0.12, 0.20, 0.12), metal)
+	# Cab doors, handles, mirrors, wipers and side steps.
 	for side in [-1.0, 1.0]:
-		_arch_visual(c + Vector3(side * 0.92, 0.88, 2.42), Vector3(0.18, 0.42, 0.08), Color(0.55, 0.07, 0.045))
-		_arch_visual(c + Vector3(side * 1.18, 2.05, 0.1), Vector3(0.10, 0.16, 0.18), metal)
-	_arch_visual(c + Vector3(0.0, 2.30, 0.15), Vector3(2.30, 0.10, 4.2), Color(0.12, 0.15, 0.13))
-	for zoff in [-1.7, -0.7, 0.3, 1.3]:
-		_arch_visual(c + Vector3(0.0, 2.22, zoff), Vector3(2.2, 0.055, 0.055), Color(0.28, 0.30, 0.27))
-
+		_arch_visual(c + Vector3(side * 1.13, 1.12, -3.05), Vector3(0.055, 0.72, 0.90), paint_light)
+		_arch_visual(c + Vector3(side * 1.17, 1.34, -2.72), Vector3(0.035, 0.045, 0.16), metal)
+		_arch_visual(c + Vector3(side * 1.32, 1.82, -3.48), Vector3(0.08, 0.34, 0.28), metal)
+		_arch_visual(c + Vector3(side * 1.38, 1.84, -3.48), Vector3(0.035, 0.20, 0.18), glass)
+		_arch_visual(c + Vector3(side * 1.23, 0.54, -2.95), Vector3(0.18, 0.12, 0.78), metal)
+	for wiper in [-0.38, 0.38]:
+		_arch_visual(c + Vector3(wiper, 1.39, -4.055), Vector3(0.045, 0.025, 0.52), rubber, -12.0)
+	# Four deep-tread tyres with steel hubs and raised tread blocks.
+	for side in [-1.0, 1.0]:
+		for zoff in [-2.45, 1.95]:
+			_cyl_visual(c + Vector3(side * 1.24, 0.58, zoff), 0.53, 0.34, rubber, Vector3(0.0, 0.0, PI * 0.5))
+			_cyl_visual(c + Vector3(side * 1.43, 0.58, zoff), 0.29, 0.055, metal, Vector3(0.0, 0.0, PI * 0.5))
+			_cyl_visual(c + Vector3(side * 1.47, 0.58, zoff), 0.12, 0.06, Color(0.40, 0.43, 0.40), Vector3(0.0, 0.0, PI * 0.5))
+			for tread_i in range(12):
+				var angle: float = float(tread_i) * TAU / 12.0
+				_box(c + Vector3(side * 1.43, 0.58 + cos(angle) * 0.49, zoff + sin(angle) * 0.49), Vector3(0.075, 0.11, 0.18), rubber)
+	# Rear lamps, registration plate, exhaust and small roof marker lights.
+	for side in [-1.0, 1.0]:
+		_arch_visual(c + Vector3(side * 0.94, 0.88, 2.69), Vector3(0.20, 0.42, 0.08), Color(0.58, 0.055, 0.035))
+		_arch_visual(c + Vector3(side * 0.94, 1.35, 2.69), Vector3(0.20, 0.18, 0.08), Color(0.78, 0.48, 0.12))
+		_arch_visual(c + Vector3(side * 0.86, 2.02, -3.15), Vector3(0.12, 0.12, 0.12), lamp)
+	_arch_visual(c + Vector3(0.0, 0.83, 2.70), Vector3(0.55, 0.18, 0.045), Color(0.68, 0.69, 0.63))
+	_cyl_visual(c + Vector3(-0.88, 0.88, 2.35), 0.055, 1.2, metal, Vector3(PI * 0.5, 0.0, 0.0))
 
 func _watchtower(c: Vector3) -> void:
 	var steel := Color(0.27, 0.3, 0.31)
@@ -3069,14 +3108,18 @@ func _raise_alarm(pos: Vector3) -> void:
 		return
 	alarm_on = true
 	if alarm_lamp_mat:
-		alarm_lamp_mat.emission = Color(1.0, 0.1, 0.1)
-		alarm_lamp_mat.albedo_color = Color(1.0, 0.1, 0.1)
-	_status("ALARM RAISED. Guards are searching the base.", 6.0)
+		alarm_lamp_mat.emission = Color(1.0, 0.06, 0.025)
+		alarm_lamp_mat.albedo_color = Color(1.0, 0.06, 0.025)
+	_status("SECURITY BREACH. Facility alarm activated.", 6.0)
 	if alarm_sfx == null:
-		alarm_sfx = AudioStreamPlayer.new()
+		alarm_sfx = AudioStreamPlayer3D.new()
+		alarm_sfx.name = "FacilityAlarm3D"
+		alarm_sfx.max_distance = 120.0
+		alarm_sfx.unit_size = 14.0
 		add_child(alarm_sfx)
+	alarm_sfx.global_position = pos
 	alarm_sfx.stream = _alarm_stream()
-	alarm_sfx.volume_db = -9.0
+	alarm_sfx.volume_db = -4.0
 	alarm_sfx.play()
 	get_tree().call_group("enemies", "alarm", pos)
 
@@ -3094,18 +3137,30 @@ func _reset_alarm() -> void:
 
 # Layered two-tone security siren, looped until the alarm is reset.
 func _alarm_stream() -> AudioStreamWAV:
-	var rate := 22050
-	var n := int(2.8 * rate)
+	# Layered industrial warning siren: slow rising/falling horn, upper harmonic,
+	# low mechanical pulse and a slight buzzy edge. The full sweep loops cleanly.
+	var rate: int = 24000
+	var seconds: float = 4.8
+	var n: int = int(seconds * float(rate))
 	var buf := PackedByteArray()
 	buf.resize(n * 2)
+	var phase_main: float = 0.0
+	var phase_low: float = 0.0
 	for i in range(n):
-		var t := float(i) / float(rate)
-		var sweep := 0.5 + 0.5 * sin(TAU * 0.72 * t)
-		var f := 610.0 + 390.0 * sweep
-		var phase := TAU * f * t
-		var pulse := 0.72 + 0.28 * sin(TAU * 1.4 * t)
-		var sample := (sin(phase) * 0.25 + sin(phase * 2.0) * 0.07 + sin(TAU * 92.0 * t) * 0.035) * pulse
-		buf.encode_s16(i * 2, int(clampf(sample, -1.0, 1.0) * 32767.0))
+		var t: float = float(i) / float(rate)
+		var sweep: float = 0.5 - 0.5 * cos(TAU * t / seconds)
+		var freq: float = lerpf(620.0, 1180.0, sweep)
+		phase_main += TAU * freq / float(rate)
+		phase_low += TAU * 96.0 / float(rate)
+		var pulse: float = 0.84 + 0.16 * sin(TAU * 2.0 * t)
+		var horn: float = sin(phase_main) * 0.30
+		horn += sin(phase_main * 2.0) * 0.105
+		horn += sin(phase_main * 3.0) * 0.035
+		var low_klaxon: float = sin(phase_low) * 0.075
+		var rasp: float = sin(phase_main * 5.0 + 0.3) * 0.018
+		var envelope: float = minf(minf(t / 0.06, (seconds - t) / 0.06), 1.0)
+		var sample: float = (horn + low_klaxon + rasp) * pulse * clampf(envelope, 0.0, 1.0)
+		buf.encode_s16(i * 2, int(clampf(sample, -0.9, 0.9) * 32767.0))
 	var wav := AudioStreamWAV.new()
 	wav.format = AudioStreamWAV.FORMAT_16_BITS
 	wav.mix_rate = rate
@@ -4165,15 +4220,9 @@ func _villa_decor() -> void:
 
 
 func _decor_exterior() -> void:
-	var hedge := Color(0.07, 0.13, 0.09)
 	var stone := Color(0.12, 0.14, 0.15)
-	var green := Color(0.16, 0.36, 0.14)
 	var wood := Color(0.36, 0.25, 0.15)
-	var ceramic := Color(0.82, 0.8, 0.74)
-	# Hedges along the inside of the west and east garden walls. Solid, so they form a real border.
-	_solid(Vector3(-19.2, 0.55, -62.5), Vector3(0.9, 1.1, 20.0), hedge)
-	_solid(Vector3(19.2, 0.55, -62.5), Vector3(0.9, 1.1, 20.0), hedge)
-	# Keep the gangster estate forecourt uncluttered: no rock garden, fountain or flower beds.)
+	# Keep the entire villa forecourt clear: no trees, hedges, rocks or garden clutter.
 	for p in [Vector3(-5.6, 0.0, -49.0), Vector3(5.6, 0.0, -49.0), Vector3(-5.6, 0.0, -54.0), Vector3(5.6, 0.0, -54.0)]:
 		_lantern(p)
 	# Porch remains clear for security patrols.
@@ -4407,7 +4456,8 @@ func _build_forest_detail_pass() -> void:
 
 
 func _inside_villa_perimeter(x: float, z: float) -> bool:
-	return absf(x) <= 21.5 and z >= -77.5 and z <= -46.5
+	# Full walled estate footprint: never place procedural trees, shrubs or rocks here.
+	return absf(x) <= 22.0 and z >= -78.0 and z <= -46.0
 
 
 func _build_compound_architecture_pass() -> void:
