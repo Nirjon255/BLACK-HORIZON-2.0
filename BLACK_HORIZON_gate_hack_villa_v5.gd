@@ -139,6 +139,7 @@ var gate_collision: CollisionShape3D
 var gate_tween: Tween
 var lbl_alarm: Label
 var alarm_sfx: AudioStreamPlayer
+var gate_sfx: AudioStreamPlayer
 var cameras: Array = []
 var signal_area: Area3D
 var mission_no := 1
@@ -281,6 +282,7 @@ func _unhandled_input(event: InputEvent) -> void:
 # ================= MAIN =================
 
 func _main_ready() -> void:
+	add_to_group("mission_controller")
 	mission_no = Engine.get_meta("mission", 1)
 	if mission_no == 2:
 		drive_pos = FOREST_LAPTOP_POS
@@ -295,6 +297,8 @@ func _main_ready() -> void:
 	_build_environment()
 	_build_hud()
 	_build_level()
+	_build_environment_upgrade()
+	_build_ambient_audio()
 	_build_objectives()
 	_spawn_player(start_pos)
 	_spawn_enemies()
@@ -1122,6 +1126,11 @@ func _fire_ray() -> void:
 	if result.is_empty():
 		return
 	var hit = result["collider"]
+	if hit is Node and hit.is_in_group("security_cameras"):
+		var controller := get_tree().get_first_node_in_group("mission_controller")
+		if controller:
+			controller.call("_destroy_security_camera", hit)
+		return
 	if hit.has_method("take_damage"):
 		var killed: bool = hit.take_damage(30 if slot == 2 else BULLET_DAMAGE, result["position"])
 		hit_confirmed.emit(killed)
@@ -2255,23 +2264,42 @@ func _block_building(c: Vector3, size: Vector3, col: Color, door_w: float) -> vo
 
 
 func _truck(c: Vector3) -> void:
-	var paint := Color(0.25, 0.29, 0.23)
-	var rubber := Color(0.035, 0.04, 0.04)
-	var metal := Color(0.18, 0.2, 0.2)
-	# Main cargo body and forward cab.
-	_solid(c + Vector3(0.0, 1.1, 0.0), Vector3(2.4, 2.2, 5.0), paint)
-	_solid(c + Vector3(0.0, 0.9, -3.4), Vector3(2.2, 1.8, 1.8), paint)
-	_arch_visual(c + Vector3(0.0, 1.42, -4.32), Vector3(1.8, 0.68, 0.05), Color(0.045, 0.075, 0.09))
-	_arch_visual(c + Vector3(-1.14, 1.55, -3.7), Vector3(0.05, 0.55, 0.52), Color(0.045, 0.075, 0.09))
-	_arch_visual(c + Vector3(1.14, 1.55, -3.7), Vector3(0.05, 0.55, 0.52), Color(0.045, 0.075, 0.09))
-	_arch_visual(c + Vector3(0.0, 0.55, -4.35), Vector3(2.35, 0.24, 0.18), metal)
-	_arch_visual(c + Vector3(0.0, 1.0, -4.34), Vector3(0.85, 0.45, 0.06), Color(0.08, 0.09, 0.09))
+	var paint := Color(0.16, 0.20, 0.17)
+	var rubber := Color(0.025, 0.028, 0.03)
+	var metal := Color(0.12, 0.14, 0.15)
+	var glass := Color(0.035, 0.075, 0.09)
+	# Chassis and squared cargo bed with reinforced side panels.
+	_solid(c + Vector3(0.0, 0.62, -0.05), Vector3(2.25, 0.42, 7.0), metal)
+	_solid(c + Vector3(0.0, 1.35, 0.15), Vector3(2.35, 1.75, 4.35), paint)
 	for side in [-1.0, 1.0]:
-		for zoff in [-1.65, 1.55]:
-			_cyl_visual(c + Vector3(side * 1.23, 0.58, zoff), 0.48, 0.26, rubber, Vector3(0.0, 0.0, PI * 0.5))
-			_cyl_visual(c + Vector3(side * 1.375, 0.58, zoff), 0.22, 0.035, metal, Vector3(0.0, 0.0, PI * 0.5))
+		_arch_visual(c + Vector3(side * 1.2, 1.42, 0.15), Vector3(0.10, 1.55, 4.45), metal)
+		for zoff in [-1.35, -0.25, 0.85, 1.75]:
+			_arch_visual(c + Vector3(side * 1.255, 1.35, zoff), Vector3(0.035, 1.35, 0.055), Color(0.30, 0.32, 0.29))
+	# Driver cab, windshield, side glass and front fascia.
+	_solid(c + Vector3(0.0, 1.05, -3.05), Vector3(2.2, 1.75, 1.85), paint)
+	_arch_visual(c + Vector3(0.0, 1.62, -4.02), Vector3(1.88, 0.72, 0.055), glass, -7.0)
+	_arch_visual(c + Vector3(-1.12, 1.55, -3.25), Vector3(0.055, 0.62, 0.72), glass)
+	_arch_visual(c + Vector3(1.12, 1.55, -3.25), Vector3(0.055, 0.62, 0.72), glass)
+	_arch_visual(c + Vector3(0.0, 0.48, -4.02), Vector3(2.35, 0.30, 0.22), metal)
+	_arch_visual(c + Vector3(0.0, 0.92, -4.04), Vector3(0.82, 0.42, 0.07), Color(0.045, 0.05, 0.05))
 	for side in [-1.0, 1.0]:
-		_arch_visual(c + Vector3(side * 0.72, 1.1, -4.38), Vector3(0.24, 0.18, 0.06), Color(0.88, 0.75, 0.42))
+		_arch_visual(c + Vector3(side * 0.78, 1.05, -4.08), Vector3(0.30, 0.22, 0.08), Color(0.88, 0.76, 0.48))
+		_arch_visual(c + Vector3(side * 0.93, 1.85, -3.35), Vector3(0.08, 0.32, 0.30), metal)
+		_arch_visual(c + Vector3(side * 1.25, 1.05, -3.55), Vector3(0.22, 0.48, 0.12), metal)
+		for zoff in [-2.55, 1.95]:
+			_cyl_visual(c + Vector3(side * 1.22, 0.58, zoff), 0.52, 0.30, rubber, Vector3(0.0, 0.0, PI * 0.5))
+			_cyl_visual(c + Vector3(side * 1.39, 0.58, zoff), 0.25, 0.045, metal, Vector3(0.0, 0.0, PI * 0.5))
+			_cyl_visual(c + Vector3(side * 1.42, 0.58, zoff), 0.09, 0.05, Color(0.42, 0.44, 0.42), Vector3(0.0, 0.0, PI * 0.5))
+			for tread_i in range(8):
+				var angle := float(tread_i) * TAU / 8.0
+				_box(c + Vector3(side * 1.39, 0.58 + cos(angle) * 0.48, zoff + sin(angle) * 0.48), Vector3(0.08, 0.10, 0.16), rubber)
+	_arch_visual(c + Vector3(0.0, 0.52, 2.48), Vector3(2.5, 0.22, 0.22), metal)
+	for side in [-1.0, 1.0]:
+		_arch_visual(c + Vector3(side * 0.92, 0.88, 2.42), Vector3(0.18, 0.42, 0.08), Color(0.55, 0.07, 0.045))
+		_arch_visual(c + Vector3(side * 1.18, 2.05, 0.1), Vector3(0.10, 0.16, 0.18), metal)
+	_arch_visual(c + Vector3(0.0, 2.30, 0.15), Vector3(2.30, 0.10, 4.2), Color(0.12, 0.15, 0.13))
+	for zoff in [-1.7, -0.7, 0.3, 1.3]:
+		_arch_visual(c + Vector3(0.0, 2.22, zoff), Vector3(2.2, 0.055, 0.055), Color(0.28, 0.30, 0.27))
 
 
 func _watchtower(c: Vector3) -> void:
@@ -2873,10 +2901,11 @@ func _build_cameras() -> void:
 		{"pos": Vector3(30.0, 3.2, -62.0), "yaw": 90.0},     # vehicle depot pole
 		{"pos": Vector3(5.1, 3.2, -48.8), "yaw": 180.0},     # villa garden gate post
 	]
-	var range_m := 22.0
-	var half_deg := 35.0
-	var cone_mat := _mat(Color(1.0, 0.9, 0.4, 0.12))
+	var range_m := 30.0
+	var half_deg := 42.0
+	var cone_mat := _mat(Color(1.0, 0.9, 0.4, 0.045))
 	cone_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	cone_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	var housing_mat := _mat(Color(0.88, 0.88, 0.86))
 	var dark_mat := _mat(Color(0.05, 0.05, 0.06))
 	var led_mat := _mat(Color(0.1, 0.9, 0.2), Color(0.1, 0.9, 0.2))
@@ -2898,6 +2927,15 @@ func _build_cameras() -> void:
 		var pivot := Node3D.new()
 		pivot.position = s["pos"]
 		add_child(pivot)
+		var camera_body := StaticBody3D.new()
+		camera_body.add_to_group("security_cameras")
+		var camera_hit := CollisionShape3D.new()
+		var camera_shape := SphereShape3D.new()
+		camera_shape.radius = 0.42
+		camera_hit.shape = camera_shape
+		camera_hit.position = Vector3(0.0, 0.0, -0.12)
+		camera_body.add_child(camera_hit)
+		pivot.add_child(camera_body)
 
 		# CCTV housing, mounting bracket, lens and status light.
 		_pivot_box(pivot, Vector3(0.42, 0.26, 0.26), Vector3.ZERO, housing_mat)
@@ -2921,6 +2959,19 @@ func _build_cameras() -> void:
 		led.position = Vector3(0.15, 0.1, -0.12)
 		pivot.add_child(led)
 
+		# Weather hood, reinforced mount, and paired infrared illuminators.
+		_pivot_box(pivot, Vector3(0.52, 0.075, 0.42), Vector3(0.0, 0.17, -0.06), dark_mat)
+		_pivot_box(pivot, Vector3(0.10, 0.34, 0.10), Vector3(0.0, 0.0, 0.20), housing_mat)
+		for ir_x in [-0.105, 0.105]:
+			var ir := MeshInstance3D.new()
+			var ir_mesh := SphereMesh.new()
+			ir_mesh.radius = 0.025
+			ir_mesh.height = 0.05
+			ir.mesh = ir_mesh
+			ir.position = Vector3(ir_x, -0.075, -0.285)
+			ir.material_override = _mat(Color(0.12, 0.08, 0.08), Color(0.75, 0.08, 0.035))
+			pivot.add_child(ir)
+
 		# Yellow cone that shows what the camera can see.
 		var cone := MeshInstance3D.new()
 		var cyl := CylinderMesh.new()
@@ -2943,6 +2994,7 @@ func _build_cameras() -> void:
 			"led": led_mat,
 			"range": range_m,
 			"half": half_deg,
+			"destroyed": false,
 		})
 
 
@@ -2961,6 +3013,8 @@ func _update_cameras(delta: float) -> void:
 		return
 	var target: Vector3 = player.global_position + Vector3(0.0, 1.0, 0.0)
 	for cam in cameras:
+		if cam.get("destroyed", false):
+			continue
 		cam["t"] += delta * 0.7
 		var pivot: Node3D = cam["pivot"]
 		pivot.rotation.y = cam["base"] + sin(cam["t"]) * cam["sweep"]
@@ -2975,6 +3029,25 @@ func _update_cameras(delta: float) -> void:
 		led.emission = c
 		if cam["aware"] >= 1.0:
 			_raise_alarm(pivot.global_position)
+			return
+
+
+func _destroy_security_camera(camera_body: Node) -> void:
+	for cam in cameras:
+		if cam.get("destroyed", false):
+			continue
+		var pivot: Node3D = cam["pivot"]
+		if camera_body.get_parent() == pivot:
+			cam["destroyed"] = true
+			cam["aware"] = 0.0
+			pivot.visible = false
+			camera_body.set_deferred("collision_layer", 0)
+			camera_body.set_deferred("collision_mask", 0)
+			var spark := _blob(pivot.global_position, 0.14, Color(1.0, 0.38, 0.08), Color(1.0, 0.18, 0.025))
+			var flash_tween := create_tween()
+			flash_tween.tween_property(spark, "scale", Vector3.ZERO, 0.28)
+			flash_tween.tween_callback(spark.queue_free)
+			_status("CCTV DESTROYED. Camera feed offline.", 2.5)
 			return
 
 
@@ -3003,9 +3076,8 @@ func _raise_alarm(pos: Vector3) -> void:
 		alarm_sfx = AudioStreamPlayer.new()
 		add_child(alarm_sfx)
 	alarm_sfx.stream = _alarm_stream()
-	alarm_sfx.volume_db = -6.0
+	alarm_sfx.volume_db = -9.0
 	alarm_sfx.play()
-	get_tree().create_timer(6.0).timeout.connect(alarm_sfx.stop)
 	get_tree().call_group("enemies", "alarm", pos)
 
 
@@ -3020,26 +3092,29 @@ func _reset_alarm() -> void:
 		cam["aware"] = 0.0
 
 
-# A rising and falling siren tone, generated in code.
+# Layered two-tone security siren, looped until the alarm is reset.
 func _alarm_stream() -> AudioStreamWAV:
 	var rate := 22050
-	var n := int(1.2 * rate)
+	var n := int(2.8 * rate)
 	var buf := PackedByteArray()
 	buf.resize(n * 2)
 	for i in range(n):
 		var t := float(i) / float(rate)
-		var f := 800.0 + 300.0 * sin(TAU * 2.0 * t)
-		var v := sin(TAU * f * t) * 0.35
-		buf.encode_s16(i * 2, int(clampf(v, -1.0, 1.0) * 32767.0))
-	var w := AudioStreamWAV.new()
-	w.format = AudioStreamWAV.FORMAT_16_BITS
-	w.mix_rate = rate
-	w.stereo = false
-	w.data = buf
-	w.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	w.loop_begin = 0
-	w.loop_end = n
-	return w
+		var sweep := 0.5 + 0.5 * sin(TAU * 0.72 * t)
+		var f := 610.0 + 390.0 * sweep
+		var phase := TAU * f * t
+		var pulse := 0.72 + 0.28 * sin(TAU * 1.4 * t)
+		var sample := (sin(phase) * 0.25 + sin(phase * 2.0) * 0.07 + sin(TAU * 92.0 * t) * 0.035) * pulse
+		buf.encode_s16(i * 2, int(clampf(sample, -1.0, 1.0) * 32767.0))
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = rate
+	wav.stereo = false
+	wav.data = buf
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_begin = 0
+	wav.loop_end = n
+	return wav
 
 
 # Called on every guard when the alarm goes off: they investigate the camera that spotted you.
@@ -3342,11 +3417,45 @@ func _unlock_security_gate() -> void:
 		gate_tween = create_tween()
 		gate_tween.set_trans(Tween.TRANS_CUBIC)
 		gate_tween.set_ease(Tween.EASE_IN_OUT)
-		gate_tween.tween_property(gate_panel, "position:x", 10.2, 2.8)
+		gate_tween.tween_property(gate_panel, "position:x", 0.06, 0.08)
+		gate_tween.tween_property(gate_panel, "position:x", -0.06, 0.08)
+		gate_tween.tween_property(gate_panel, "position:x", 0.0, 0.08)
+		gate_tween.tween_property(gate_panel, "position:y", 3.35, 3.8)
 	_set_captured(true)
-	_status("GATE UNLOCKED. Security barrier opening.", 5.0)
+	_play_gate_motor()
+	_status("ACCESS GRANTED. Hydraulic security barrier rising.", 5.0)
 	if player:
 		player.set_controls(true)
+
+
+func _play_gate_motor() -> void:
+	if gate_sfx == null:
+		gate_sfx = AudioStreamPlayer.new()
+		add_child(gate_sfx)
+	gate_sfx.stream = _gate_motor_stream()
+	gate_sfx.volume_db = -8.0
+	gate_sfx.play()
+
+
+func _gate_motor_stream() -> AudioStreamWAV:
+	var rate := 22050
+	var n := int(4.0 * rate)
+	var data := PackedByteArray()
+	data.resize(n * 2)
+	for i in range(n):
+		var t := float(i) / float(rate)
+		var envelope := minf(t / 0.18, 1.0) * minf((4.0 - t) / 0.45, 1.0)
+		var grind := sin(TAU * (48.0 + 9.0 * sin(TAU * 0.35 * t)) * t) * 0.22
+		var metal := sin(TAU * 173.0 * t) * 0.055 + sin(TAU * 287.0 * t) * 0.025
+		var rattle := (randf() * 2.0 - 1.0) * 0.035
+		var sample := (grind + metal + rattle) * clampf(envelope, 0.0, 1.0)
+		data.encode_s16(i * 2, int(clampf(sample, -1.0, 1.0) * 32767.0))
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = rate
+	wav.stereo = false
+	wav.data = data
+	return wav
 
 
 # World position to a point on the tablet map. The map covers -120..120 in x and z, north at the top.
@@ -3532,13 +3641,13 @@ const VILLA_ROOF := 7.2    # first-floor roof top
 
 
 func _build_villa() -> void:
-	var stone := Color(0.52, 0.48, 0.42)
-	var plaster := Color(0.8, 0.76, 0.68)
-	var inner := Color(0.84, 0.82, 0.77)
-	var trim := Color(0.66, 0.63, 0.57)
-	var floor_col := Color(0.62, 0.58, 0.52)
-	var wood := Color(0.36, 0.25, 0.15)
-	var iron := Color(0.2, 0.21, 0.22)
+	var stone := Color(0.20, 0.22, 0.23)
+	var plaster := Color(0.34, 0.36, 0.37)
+	var inner := Color(0.56, 0.55, 0.50)
+	var trim := Color(0.10, 0.12, 0.13)
+	var floor_col := Color(0.25, 0.27, 0.26)
+	var wood := Color(0.16, 0.12, 0.09)
+	var iron := Color(0.07, 0.09, 0.10)
 	_villa_garden()
 	_villa_ground_floor(stone, inner, trim, floor_col)
 	_villa_first_floor(plaster, inner, trim)
@@ -3550,30 +3659,26 @@ func _build_villa() -> void:
 
 # Walled garden (same wall line as before), gate, drive, lap pool and cypress trees.
 func _villa_garden() -> void:
-	var wall := Color(0.8, 0.77, 0.7)
-	var wood := Color(0.36, 0.27, 0.16)
+	var wall := Color(0.16, 0.18, 0.19)
+	var steel := Color(0.08, 0.10, 0.11)
 	_solid(Vector3(-12.25, 1.1, -48.0), Vector3(15.5, 2.2, 0.4), wall)
 	_solid(Vector3(12.25, 1.1, -48.0), Vector3(15.5, 2.2, 0.4), wall)
 	_solid(Vector3(-5.1, 1.8, -48.0), Vector3(1.2, 3.6, 1.2), wall)
 	_solid(Vector3(5.1, 1.8, -48.0), Vector3(1.2, 3.6, 1.2), wall)
-	_vis(Vector3(0.0, 3.5, -48.0), Vector3(10.2, 0.5, 1.2), wood)
+	_vis(Vector3(0.0, 3.5, -48.0), Vector3(10.2, 0.5, 1.2), steel)
 	_solid(Vector3(-20.0, 1.1, -62.0), Vector3(0.4, 2.2, 28.0), wall)
 	_solid(Vector3(20.0, 1.1, -62.0), Vector3(0.4, 2.2, 28.0), wall)
 	_solid(Vector3(0.0, 1.1, -76.0), Vector3(40.0, 2.2, 0.4), wall)
-	# Lawn and gravel drive from the gate to the porch.
-	_vis(Vector3(0.0, 0.02, -62.0), Vector3(39.0, 0.04, 27.0), Color(0.2, 0.3, 0.14))
-	_vis(Vector3(0.0, 0.045, -51.5), Vector3(7.0, 0.02, 7.0), Color(0.45, 0.42, 0.36))
-	# Lap pool along the rear garden: solid coping, water about 0.6 m deep.
-	var coping := Color(0.78, 0.76, 0.7)
-	_solid(Vector3(0.0, 0.35, -75.3), Vector3(23.6, 0.7, 0.6), coping)
-	_solid(Vector3(0.0, 0.35, -72.7), Vector3(23.6, 0.7, 0.6), coping)
-	_solid(Vector3(-11.3, 0.35, -74.0), Vector3(0.6, 0.7, 2.0), coping)
-	_solid(Vector3(11.3, 0.35, -74.0), Vector3(0.6, 0.7, 2.0), coping)
-	_vis(Vector3(0.0, 0.55, -74.0), Vector3(22.0, 0.04, 2.0), Color(0.16, 0.42, 0.52))
-	# Cypress trees: visual only, placed clear of the guard routes.
-	for p in [Vector3(-18.8, 0.0, -50.8), Vector3(18.8, 0.0, -50.8), Vector3(-18.8, 0.0, -74.5), Vector3(18.8, 0.0, -74.5)]:
-		_cypress(p)
-
+	# Clean private forecourt: clipped lawn and a dark, stone-free vehicle approach.
+	_vis(Vector3(0.0, 0.02, -62.0), Vector3(39.0, 0.04, 27.0), Color(0.12, 0.17, 0.12))
+	_vis(Vector3(0.0, 0.045, -51.5), Vector3(7.0, 0.02, 7.0), Color(0.19, 0.20, 0.19))
+	# No boulders, cypress trees or ground-level pool inside the villa perimeter.
+	for x in [-18.9, 18.9]:
+		_vis(Vector3(x, 1.15, -62.0), Vector3(0.12, 2.3, 23.0), Color(0.12, 0.15, 0.14))
+	for x in [-7.0, 7.0]:
+		for z in [-51.0, -57.0, -64.0, -70.0]:
+			_cyl_visual(Vector3(x, 0.42, z), 0.09, 0.84, steel)
+			_blob(Vector3(x, 0.86, z), 0.07, Color(0.7, 0.78, 0.72), Color(0.25, 0.38, 0.3))
 
 
 # Ground floor: stone walls with real window and door openings, a west living room, an east dining room,
@@ -3666,6 +3771,7 @@ func _villa_roof_and_terrace(plaster: Color, iron: Color) -> void:
 	_solid(Vector3(-12.9, pc, -63.0), Vector3(0.3, 0.8, 12.0), plaster)
 	_solid(Vector3(12.9, pc, -63.0), Vector3(0.3, 0.8, 12.0), plaster)
 
+	_villa_rooftop_pool()
 	_roof_unit(Vector3(-4.5, VILLA_ROOF + 0.3, -65.5), Vector3(2.2, 0.6, 1.4))
 	_roof_unit(Vector3(4.5, VILLA_ROOF + 0.25, -65.5), Vector3(1.8, 0.5, 1.2))
 	_cyl_visual(Vector3(9.5, VILLA_ROOF + 0.9, -65.5), 0.9, 1.8, Color(0.3, 0.32, 0.32))
@@ -3676,6 +3782,34 @@ func _villa_roof_and_terrace(plaster: Color, iron: Color) -> void:
 	_balcony_rail(Vector3(0.0, 0.0, -70.9), Vector3(32.0, 0.0, 0.2), iron)
 	_balcony_rail(Vector3(-10.5, 0.0, -55.1), Vector3(11.0, 0.0, 0.2), iron)
 	_balcony_rail(Vector3(10.5, 0.0, -55.1), Vector3(11.0, 0.0, 0.2), iron)
+
+
+# Private rooftop pool with coping, dark tile rim and reflective water.
+func _villa_rooftop_pool() -> void:
+	var y := VILLA_ROOF + 0.08
+	var coping := Color(0.72, 0.73, 0.70)
+	var tile := Color(0.035, 0.075, 0.085)
+	var water := StandardMaterial3D.new()
+	water.albedo_color = Color(0.035, 0.30, 0.38, 0.88)
+	water.metallic = 0.28
+	water.roughness = 0.12
+	water.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	water.clearcoat_enabled = true
+	water.clearcoat = 0.9
+	_box(Vector3(0.0, y + 0.12, -63.0), Vector3(8.4, 0.22, 3.8), tile)
+	_box(Vector3(0.0, y + 0.25, -65.0), Vector3(8.6, 0.28, 0.18), coping)
+	_box(Vector3(0.0, y + 0.25, -61.0), Vector3(8.6, 0.28, 0.18), coping)
+	_box(Vector3(-4.2, y + 0.25, -63.0), Vector3(0.18, 0.28, 3.8), coping)
+	_box(Vector3(4.2, y + 0.25, -63.0), Vector3(0.18, 0.28, 3.8), coping)
+	var water_mesh := MeshInstance3D.new()
+	var water_box := BoxMesh.new()
+	water_box.size = Vector3(8.0, 0.025, 3.4)
+	water_mesh.mesh = water_box
+	water_mesh.material_override = water
+	water_mesh.position = Vector3(0.0, y + 0.18, -63.0)
+	add_child(water_mesh)
+	_box(Vector3(-2.5, y + 0.17, -63.0), Vector3(0.035, 0.02, 3.0), Color(0.12, 0.65, 0.72), Vector3.ZERO, Color(0.04, 0.28, 0.34))
+	_box(Vector3(2.5, y + 0.17, -63.0), Vector3(0.035, 0.02, 3.0), Color(0.12, 0.65, 0.72), Vector3.ZERO, Color(0.04, 0.28, 0.34))
 
 
 # Entrance porch: a slab on two columns. The terrace floor above it is part of the same roof.
@@ -4031,33 +4165,23 @@ func _villa_decor() -> void:
 
 
 func _decor_exterior() -> void:
-	var hedge := Color(0.14, 0.3, 0.12)
-	var stone := Color(0.7, 0.68, 0.62)
+	var hedge := Color(0.07, 0.13, 0.09)
+	var stone := Color(0.12, 0.14, 0.15)
 	var green := Color(0.16, 0.36, 0.14)
 	var wood := Color(0.36, 0.25, 0.15)
 	var ceramic := Color(0.82, 0.8, 0.74)
 	# Hedges along the inside of the west and east garden walls. Solid, so they form a real border.
 	_solid(Vector3(-19.2, 0.55, -62.5), Vector3(0.9, 1.1, 20.0), hedge)
 	_solid(Vector3(19.2, 0.55, -62.5), Vector3(0.9, 1.1, 20.0), hedge)
-	# Flower beds either side of the drive, the fountain, a bench and lanterns.
-	_flowers(Vector3(-9.0, 0.0, -49.6), 3.2, 1.4)
-	_flowers(Vector3(9.0, 0.0, -49.6), 3.2, 1.4)
-	_fountain(Vector3(-13.5, 0.0, -51.0))
-	_bench(Vector3(13.8, 0.0, -50.6))
+	# Keep the gangster estate forecourt uncluttered: no rock garden, fountain or flower beds.)
 	for p in [Vector3(-5.6, 0.0, -49.0), Vector3(5.6, 0.0, -49.0), Vector3(-5.6, 0.0, -54.0), Vector3(5.6, 0.0, -54.0)]:
 		_lantern(p)
-	# Potted plants on the porch, either side of the door.
-	_potted(Vector3(-3.2, 0.0, -53.5), 0.3, 0.5, 0.42, green)
-	_potted(Vector3(3.2, 0.0, -53.5), 0.3, 0.5, 0.42, green)
+	# Porch remains clear for security patrols.
 	# Pilasters on the front facade, between the windows and at the corners.
 	for x in [-15.5, -5.5, 5.5, 15.5]:
 		var px: float = x
 		_box(Vector3(px, 1.65, -54.92), Vector3(0.5, 3.3, 0.24), stone)
-	# Window boxes under the first-floor windows on the balcony side.
-	for x in [-9.5, 9.5]:
-		var wx: float = x
-		_box(Vector3(wx, 4.3, -56.62), Vector3(1.7, 0.25, 0.35), wood)
-		_flowers_row(Vector3(wx, 4.5, -56.62), 1.6, Color(0.9, 0.4, 0.55))
+	# Dark metal window trim replaces decorative flower boxes.
 	# Parasol on the south side of the roof terrace.
 	_cyl_visual(Vector3(-13.0, 3.6 + 1.1, -56.0), 0.04, 2.2, wood)
 	_cone(Vector3(-13.0, 5.6, -56.0), 1.3, 0.12, 0.35, Color(0.72, 0.22, 0.18))
@@ -4065,10 +4189,7 @@ func _decor_exterior() -> void:
 	_box(Vector3(14.5, 3.6 + 0.225, -62.0), Vector3(0.9, 0.45, 2.4), Color(0.32, 0.3, 0.27))
 	_box(Vector3(14.92, 4.1, -62.0), Vector3(0.25, 0.6, 2.4), Color(0.32, 0.3, 0.27))
 	_box(Vector3(13.6, 3.6 + 0.2, -60.0), Vector3(0.6, 0.4, 0.9), wood)
-	# Planters with shrubs on the west side of the terrace.
-	_box(Vector3(-14.8, 3.6 + 0.3, -68.0), Vector3(0.8, 0.6, 1.4), ceramic)
-	_blob(Vector3(-14.8, 4.35, -68.0), 0.42, green)
-	_blob(Vector3(-14.8, 4.5, -67.5), 0.3, Color(0.22, 0.42, 0.18))
+	# Open terrace edge leaves clear sightlines around the rooftop pool.
 
 
 func _decor_ground() -> void:
@@ -4215,3 +4336,164 @@ func _stair_rail() -> void:
 		var top: float = float(kk + 1) * 0.18
 		_box(Vector3(-1.45, top + 0.405, zc), Vector3(0.07, 0.81, 0.07), wood)
 
+
+
+
+# ================= Environment and immersion upgrade =================
+# Visual-only pass: keeps the existing mission collision, navigation and controls.
+
+func _build_environment_upgrade() -> void:
+	if mission_no == 2:
+		_build_forest_detail_pass()
+		_build_compound_architecture_pass()
+	else:
+		_build_mountain_detail_pass()
+
+
+func _build_forest_detail_pass() -> void:
+	# Layered understory, boulders and fallen timber use MultiMesh to stay light.
+	var shrub_xf: Array = []
+	var shrub_col: Array = []
+	var rock_xf: Array = []
+	var rock_col: Array = []
+	var log_xf: Array = []
+	var log_col: Array = []
+	for i in range(155):
+		var a := randf() * TAU
+		var r := randf_range(24.0, 112.0)
+		var x: float = cos(a) * r
+		var z: float = sin(a) * r
+		if (absf(x) < 7.0 and z > -12.0 and z < 120.0) or _inside_villa_perimeter(x, z):
+			continue
+		var s := randf_range(0.65, 1.35)
+		shrub_xf.append(Transform3D(Basis.from_scale(Vector3(s * 1.5, s * 0.72, s * 1.2)), Vector3(x, s * 0.48, z)))
+		shrub_col.append(Color(0.12, 0.19, 0.12).lerp(Color(0.30, 0.34, 0.20), randf_range(0.0, 0.45)))
+	for i in range(72):
+		var a2 := randf() * TAU
+		var r2 := randf_range(18.0, 112.0)
+		var x2: float = cos(a2) * r2
+		var z2: float = sin(a2) * r2
+		if _inside_villa_perimeter(x2, z2):
+			continue
+		var sx := randf_range(0.8, 2.8)
+		var sy := randf_range(0.35, 1.2)
+		rock_xf.append(Transform3D(Basis.from_scale(Vector3(sx, sy, sx * randf_range(0.7, 1.3))), Vector3(x2, sy * 0.65, z2)))
+		rock_col.append(Color(0.25, 0.28, 0.27).lerp(Color(0.62, 0.65, 0.65), randf_range(0.0, 0.32)))
+	for i in range(18):
+		var lx := randf_range(-105.0, 105.0)
+		var lz := randf_range(-105.0, 105.0)
+		if _inside_villa_perimeter(lx, lz):
+			continue
+		var length := randf_range(2.2, 4.8)
+		var log := Transform3D(Basis(Vector3.UP, randf_range(0.0, TAU)) * Basis.from_scale(Vector3(0.22, 0.22, length)), Vector3(lx, 0.22, lz))
+		log_xf.append(log)
+		log_col.append(Color(0.19, 0.14, 0.10))
+	_far_multimesh(_sphere_mesh(), shrub_xf, shrub_col)
+	_far_multimesh(_sphere_mesh(), rock_xf, rock_col)
+	_far_multimesh(_environment_log_mesh(), log_xf, log_col)
+
+	# Snow banks and drainage shoulders beside the approach road.
+	for side in [-1.0, 1.0]:
+		for i in range(13):
+			var z3 := -8.0 + float(i) * 9.5
+			var drift := _vis(Vector3(side * randf_range(5.0, 6.4), randf_range(0.18, 0.34), z3), Vector3(randf_range(1.2, 2.0), randf_range(0.35, 0.65), randf_range(5.0, 9.0)), Color(0.72, 0.79, 0.84))
+			drift.material_override = _mat(Color(0.72, 0.79, 0.84))
+	# Roadside reflector posts, placed outside the drivable road.
+	for side2 in [-1.0, 1.0]:
+		for i in range(12):
+			var pz := -4.0 + float(i) * 10.0
+			_vis(Vector3(side2 * 5.7, 0.48, pz), Vector3(0.10, 0.95, 0.10), Color(0.20, 0.22, 0.22))
+			_vis(Vector3(side2 * 5.7, 0.78, pz), Vector3(0.14, 0.12, 0.12), Color(0.78, 0.82, 0.78))
+
+
+func _inside_villa_perimeter(x: float, z: float) -> bool:
+	return absf(x) <= 21.5 and z >= -77.5 and z <= -46.5
+
+
+func _build_compound_architecture_pass() -> void:
+	# Barracks: recessed dark glazing, concrete lintels and wall-mounted lights.
+	for bx in [-22.0, 22.0]:
+		for wx in [-4.0, 0.0, 4.0]:
+			_vis(Vector3(bx + wx, 2.15, -26.42), Vector3(1.35, 1.05, 0.055), Color(0.10, 0.15, 0.17))
+			_vis(Vector3(bx + wx, 2.72, -26.36), Vector3(1.55, 0.12, 0.18), Color(0.48, 0.49, 0.45))
+			_vis(Vector3(bx + wx, 1.58, -26.36), Vector3(1.55, 0.12, 0.18), Color(0.48, 0.49, 0.45))
+		_vis(Vector3(bx, 3.25, -30.0), Vector3(12.4, 0.18, 7.4), Color(0.27, 0.29, 0.28))
+		for lx in [-5.0, 5.0]:
+			_vis(Vector3(bx + lx, 2.95, -26.1), Vector3(0.35, 0.18, 0.18), Color(0.72, 0.68, 0.52), 0.0)
+	# Vehicle depot: segmented roller shutter and loading-bay safety markings.
+	for i in range(12):
+		_vis(Vector3(28.0 - 3.0 + float(i) * 0.55, 1.45, -69.35), Vector3(0.025, 2.7, 0.035), Color(0.18, 0.20, 0.21))
+	for side3 in [-1.0, 1.0]:
+		_vis(Vector3(28.0 + side3 * 6.7, 2.3, -68.8), Vector3(0.22, 4.6, 0.24), Color(0.23, 0.25, 0.25))
+		_vis(Vector3(28.0 + side3 * 6.72, 0.12, -68.6), Vector3(0.7, 0.24, 1.0), Color(0.72, 0.55, 0.20))
+	# Utility poles and sagging cable along the road edge.
+	for side4 in [-1.0, 1.0]:
+		for i in range(4):
+			var pz2 := 8.0 + float(i) * 30.0
+			_vis(Vector3(side4 * 10.0, 4.0, pz2), Vector3(0.22, 8.0, 0.22), Color(0.22, 0.19, 0.14))
+			_vis(Vector3(side4 * 10.0, 7.8, pz2), Vector3(2.6, 0.16, 0.16), Color(0.22, 0.19, 0.14))
+	# Perimeter floodlights.
+	for fp in [Vector3(-39.0, 5.4, -45.0), Vector3(39.0, 5.4, -45.0), Vector3(-39.0, 5.4, -78.0), Vector3(39.0, 5.4, -78.0)]:
+		_vis(fp, Vector3(0.72, 0.34, 0.30), Color(0.16, 0.18, 0.18))
+
+
+func _build_mountain_detail_pass() -> void:
+	var mountain_xf: Array = []
+	var mountain_col: Array = []
+	for i in range(55):
+		var a := randf() * TAU
+		var r := randf_range(55.0, 112.0)
+		var h := randf_range(3.0, 12.0)
+		var w := randf_range(2.0, 7.0)
+		mountain_xf.append(Transform3D(Basis.from_scale(Vector3(w, h, w)), Vector3(cos(a) * r, h * 0.5, sin(a) * r)))
+		mountain_col.append(Color(0.22, 0.25, 0.26).lerp(Color(0.68, 0.72, 0.74), randf_range(0.0, 0.35)))
+	_far_multimesh(_cone_mesh(), mountain_xf, mountain_col)
+
+
+func _build_ambient_audio() -> void:
+	# Procedural low-level wind and distant forest calls; no external audio files required.
+	var rate := 22050
+	var seconds := 8.0
+	var count := int(rate * seconds)
+	var data := PackedByteArray()
+	data.resize(count * 2)
+	var filtered := 0.0
+	for i in range(count):
+		var t := float(i) / float(rate)
+		var raw := randf() * 2.0 - 1.0
+		filtered += (raw - filtered) * 0.018
+		var gust := 0.65 + 0.22 * sin(TAU * 0.11 * t) + 0.10 * sin(TAU * 0.27 * t)
+		var sample := filtered * gust * 0.20
+		sample += sin(TAU * 54.0 * t) * 0.025
+		for bird_start in [1.25, 3.8, 6.15]:
+			var bt := t - bird_start
+			if bt >= 0.0 and bt < 0.42:
+				var sweep := 1850.0 + 700.0 * sin(PI * bt / 0.42)
+				sample += sin(TAU * sweep * bt) * sin(PI * bt / 0.42) * 0.035
+		var fade := minf(minf(t / 0.25, (seconds - t) / 0.25), 1.0)
+		sample *= fade
+		data.encode_s16(i * 2, int(clampf(sample, -0.8, 0.8) * 32767.0))
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = rate
+	stream.stereo = false
+	stream.data = data
+	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	stream.loop_begin = 0
+	stream.loop_end = count
+	var ambience := AudioStreamPlayer.new()
+	ambience.name = "ForestAmbience"
+	ambience.stream = stream
+	ambience.volume_db = -18.0
+	add_child(ambience)
+	ambience.play()
+
+
+
+func _environment_log_mesh() -> CylinderMesh:
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = 0.22
+	mesh.bottom_radius = 0.22
+	mesh.height = 1.0
+	mesh.radial_segments = 7
+	return mesh
