@@ -4256,8 +4256,8 @@ func _build_forest_detail_pass() -> void:
 	for i in range(155):
 		var a := randf() * TAU
 		var r := randf_range(24.0, 112.0)
-		var x := cos(a) * r
-		var z := sin(a) * r
+		var x: float = cos(a) * r
+		var z: float = sin(a) * r
 		if absf(x) < 7.0 and z > -12.0 and z < 120.0:
 			continue
 		var s := randf_range(0.65, 1.35)
@@ -4266,8 +4266,8 @@ func _build_forest_detail_pass() -> void:
 	for i in range(72):
 		var a2 := randf() * TAU
 		var r2 := randf_range(18.0, 112.0)
-		var x2 := cos(a2) * r2
-		var z2 := sin(a2) * r2
+		var x2: float = cos(a2) * r2
+		var z2: float = sin(a2) * r2
 		var sx := randf_range(0.8, 2.8)
 		var sy := randf_range(0.35, 1.2)
 		rock_xf.append(Transform3D(Basis.from_scale(Vector3(sx, sy, sx * randf_range(0.7, 1.3))), Vector3(x2, sy * 0.65, z2)))
